@@ -1,5 +1,6 @@
 use super::Group;
 use super::Subject;
+mod offers;
 use offers::MembershipOffer;
 use offers::TransferralOffer;
 
@@ -89,9 +90,9 @@ mod tests {
     // Groups 
     let first_group = Group::new(first_group_id, vec![first_subject, second_subject], 2);
     let second_group = Group::new(second_group_id, vec![third_subject, fourth_subject],2);
-    let offer = second_group.propose_transferral(&first_group);
-    let expected_offer = TransferralOffer::new(1,101,MembershipOffer::new(0,Some(1)));
-    assert_eq!(offer.unwrap(),expected_offer);
+    let actual_offer = second_group.propose_transferral(&first_group);
+    let expected_offer = TransferralOffer::new(1,101,MembershipOffer::new(0,Some(-1)));
+    assert_eq!(actual_offer.unwrap(),expected_offer);
     }
 
     #[test]
@@ -161,8 +162,8 @@ mod tests {
     let first_group = Group::new(first_group_id, vec![first_subject], 1);
     // The second subject wants to be in the first group more than the first so an offer is given
     let actual_offer = first_group.handle_membership_proposal(&second_subject).unwrap(); 
-    let offer = MembershipOffer::new(0,Some(1));
-    assert_eq!(offer,actual_offer);
+    let expected_offer = MembershipOffer::new(0,Some(-1));
+    assert_eq!(expected_offer,actual_offer);
     // The third subject does not want to be in the first group more than the first thus no offer is given
     let no_offer = first_group.handle_membership_proposal(&third_subject).is_none();
     assert!(no_offer);

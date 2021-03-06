@@ -1,4 +1,5 @@
 //#[derive(Debug)]
+mod proposals;
 pub struct Subject {
     id: u64,
     preferences: Vec<u64>,
@@ -15,10 +16,10 @@ impl Subject {
 }
 //#[derive(Debug)]
 pub struct Group {
-    id: u64,
-    subjects: Vec<Subject>,
-    capacity: i32,
-    highest_dissatisfaction: i32,
+    id: u64, 
+    subjects: Vec<Subject>, // the members
+    capacity: i32, // The maximum number of members
+    highest_dissatisfaction: i32, // the dissatisfaction rating given by the most dissatisfied member
 }
 
 impl Group {
@@ -42,9 +43,9 @@ impl Group {
             highest_dissatisfaction,
         }
     }
-
-    fn new_with_first_choice(id:u64, subjects: Vec<Subject>, capacity: i32) -> Group {
-        Group{id,subjects,capacity,0 as i32}
+    // Should probably move this elsewhere 
+    fn new_subjects_with_first_choice(id:u64, subjects: Vec<Subject>, capacity: i32) -> Group {
+        Group{id,subjects,capacity,highest_dissatisfaction: 0 as i32}
     }
 
     fn highest_dissatisfaction(&self) -> i32 {
