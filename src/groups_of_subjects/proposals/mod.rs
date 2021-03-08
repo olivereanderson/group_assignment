@@ -31,13 +31,12 @@ impl Group {
     /// a transferal offer will only be provided if this group has a member who is more eager to be 
     /// in the other group than that groups currently most dissatisfied member. 
     fn propose_transferral(&self, other: &Self) -> Option<TransferralOffer> {
-        if let Some((subject_lookup_key, membership_offer)) = self.subjects.iter().enumerate().filter_map(|(key,subject)| {
-            match other.handle_membership_proposal(&subject) {
-                Some(membership_offer) => Some((key,membership_offer)),
-                None => None, 
-            }
-        }).min_by(|(_key1,offer1),(_key2,offer2)| offer1.cmp(&offer2)) {
-            Some(TransferralOffer::new(subject_lookup_key,other.id(),membership_offer))
+        let proposed_group_id = other.id();
+        if let Some((lookup_key, Some(membership_offer))) = self.subjects.iter()
+        .enumerate()
+        .min_by(|(_key1,x),(_key2,y)| x.dissatisfaction(&proposed_group_id).cmp(&y.dissatisfaction(&proposed_group_id)))
+        .map(|(key,subject)| (key,other.handle_membership_proposal(subject))) {
+            Some(TransferralOffer::new(lookup_key, proposed_group_id, membership_offer))
         } else {
             None
         }
