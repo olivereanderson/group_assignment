@@ -1,13 +1,14 @@
 use super::Group;
-use super::Subject;
+use super::TestSubject;
+use crate::groups_of_subjects::Subject;
 mod offers;
 use offers::MembershipOffer;
 use offers::TransferralOffer;
 
-impl Group {
+impl<'a,T:Subject> Group<'a,T> {
     /// Provides a membership offer if this group is either not full or the proposing subject
     /// is more eager to be a member of this group then the currently most dissatisfied member.
-    fn handle_membership_proposal(&self, subject: &Subject) -> Option<MembershipOffer> {
+    fn handle_membership_proposal(&self, subject: &T) -> Option<MembershipOffer> {
         let dissatisfaction_rating = subject.dissatisfaction(&self.id);
         if (self.subjects.len() as i32) >= self.capacity {
             let dissatisfaction_improvement =
@@ -58,10 +59,10 @@ mod tests {
     let second_group_id = 102 as u64;
     // Subjects
     let first_subject =
-    Subject::new(first_subject_id, vec![second_group_id, first_group_id]);
+    TestSubject::new(first_subject_id, vec![second_group_id, first_group_id]);
     let second_subject =
-    Subject::new(second_subject_id, vec![first_group_id, second_group_id]);
-    let third_subject = Subject::new(third_subject_id, vec![second_group_id,first_group_id]);
+    TestSubject::new(second_subject_id, vec![first_group_id, second_group_id]);
+    let third_subject = TestSubject::new(third_subject_id, vec![second_group_id,first_group_id]);
     // Groups 
     let first_group = Group::new(first_group_id, vec![first_subject, second_subject], 3);
     let second_group = Group::new(second_group_id, vec![third_subject],1);
@@ -81,11 +82,11 @@ mod tests {
     let second_group_id = 102 as u64;
     // Subjects
     let first_subject =
-    Subject::new(first_subject_id, vec![second_group_id, first_group_id]);
+    TestSubject::new(first_subject_id, vec![second_group_id, first_group_id]);
     let second_subject =
-    Subject::new(second_subject_id, vec![first_group_id, second_group_id]);
-    let third_subject = Subject::new(third_subject_id, vec![second_group_id,first_group_id]);
-    let fourth_subject = Subject::new(fourth_subject_id, vec![first_group_id,second_group_id]);
+    TestSubject::new(second_subject_id, vec![first_group_id, second_group_id]);
+    let third_subject = TestSubject::new(third_subject_id, vec![second_group_id,first_group_id]);
+    let fourth_subject = TestSubject::new(fourth_subject_id, vec![first_group_id,second_group_id]);
     // Groups 
     let first_group = Group::new(first_group_id, vec![first_subject, second_subject], 2);
     let second_group = Group::new(second_group_id, vec![third_subject, fourth_subject],2);
@@ -106,11 +107,11 @@ mod tests {
     let second_group_id = 102 as u64;
     // Subjects
     let first_subject =
-    Subject::new(first_subject_id, vec![second_group_id, first_group_id]);
+    TestSubject::new(first_subject_id, vec![second_group_id, first_group_id]);
     let second_subject =
-    Subject::new(second_subject_id, vec![first_group_id, second_group_id]);
-    let third_subject = Subject::new(third_subject_id, vec![second_group_id,first_group_id]);
-    let fourth_subject = Subject::new(fourth_subject_id, vec![second_group_id,first_group_id]);
+    TestSubject::new(second_subject_id, vec![first_group_id, second_group_id]);
+    let third_subject = TestSubject::new(third_subject_id, vec![second_group_id,first_group_id]);
+    let fourth_subject = TestSubject::new(fourth_subject_id, vec![second_group_id,first_group_id]);
     // Groups 
     let first_group = Group::new(first_group_id, vec![first_subject, second_subject], 3);
     let second_group = Group::new(second_group_id, vec![third_subject, fourth_subject],1);
@@ -131,10 +132,10 @@ mod tests {
     let second_group_id = 102 as u64;
     // Subjects
     let first_subject =
-    Subject::new(first_subject_id, vec![second_group_id, first_group_id]);
+    TestSubject::new(first_subject_id, vec![second_group_id, first_group_id]);
     let second_subject =
-    Subject::new(second_subject_id, vec![first_group_id, second_group_id]);
-    let third_subject = Subject::new(third_subject_id, vec![first_group_id, second_group_id]);
+    TestSubject::new(second_subject_id, vec![first_group_id, second_group_id]);
+    let third_subject = TestSubject::new(third_subject_id, vec![first_group_id, second_group_id]);
     // Group(s)
     let first_group = Group::new(first_group_id, vec![first_subject, second_subject], 3);
     let actual_offer = first_group.handle_membership_proposal(&third_subject).unwrap(); 
@@ -153,10 +154,10 @@ mod tests {
     let second_group_id = 102 as u64;
     // Subjects
     let first_subject =
-        Subject::new(first_subject_id, vec![second_group_id, first_group_id]);
+        TestSubject::new(first_subject_id, vec![second_group_id, first_group_id]);
     let second_subject =
-        Subject::new(second_subject_id, vec![first_group_id, second_group_id]);
-    let third_subject = Subject::new(third_subject_id, vec![second_group_id, first_group_id]);
+        TestSubject::new(second_subject_id, vec![first_group_id, second_group_id]);
+    let third_subject = TestSubject::new(third_subject_id, vec![second_group_id, first_group_id]);
     // Group(s)
     let first_group = Group::new(first_group_id, vec![first_subject], 1);
     // The second subject wants to be in the first group more than the first so an offer is given

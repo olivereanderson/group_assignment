@@ -1,11 +1,13 @@
 use super::Assigner;
 use super::InsufficientCapacityError;
-use super::Subject;
+use crate::groups_of_subjects::Subject;
+use super::TestSubject;
 use super:: Group;
+use crate::groups_of_subjects::GroupMetaData;
 use std::{collections::{HashMap}, fmt};
 
-impl Group {
-    fn add_subject(&mut self, subject: Subject) -> Result<(),FullGroupError> {
+impl<'a,T:Subject> Group<'a,T> {
+    fn add_subject(&mut self, subject: &'a mut T) -> Result<(),FullGroupError> {
         if (self.subjects.len() as i32) < self.capacity {
             self.subjects.push(subject);
             Ok(())
@@ -33,7 +35,7 @@ impl FirstComeFirstServed {
 }
  
 impl Assigner for FirstComeFirstServed {
-    fn assign(subjects: Vec<Subject>, groups: Vec<Group>) -> Result<Vec<Group>,InsufficientCapacityError> {
+    fn assign<'a,T:Subject> (subjects: Vec<&'a mut T>, groups: Vec<&'a mut GroupMetaData>) -> Result<(),InsufficientCapacityError> {
         Self::sufficient_capacity(&subjects, &groups)?;
         if groups.len() == 0 {
             Ok(groups)
@@ -70,10 +72,10 @@ mod tests {
         let second_group_id = 102 as u64;
         let third_group_id = 103 as u64;
         // subjects 
-        let first_subject = Subject::new(first_subject_id, vec![first_group_id,third_group_id]);
-        let second_subject = Subject::new(second_subject_id, vec![first_group_id, second_group_id]);
-        let third_subject = Subject::new(third_subject_id, vec![first_group_id,second_group_id]);
-        let fourth_subject = Subject::new(third_subject_id, vec![second_group_id]);
+        let first_subject = TestSubject::new(first_subject_id, vec![first_group_id,third_group_id]);
+        let second_subject = TestSubject::new(second_subject_id, vec![first_group_id, second_group_id]);
+        let third_subject = TestSubject::new(third_subject_id, vec![first_group_id,second_group_id]);
+        let fourth_subject = TestSubject::new(third_subject_id, vec![second_group_id]);
         let subjects = vec![first_subject,second_subject, third_subject, fourth_subject];
         // groups 
         let first_group = Group::new(first_group_id, Vec::new(),2);
@@ -90,8 +92,8 @@ mod tests {
         let second_subject_id = 2 as u64;
         let first_group_id = 101 as u64;
         let second_group_id = 102 as u64;
-        let first_subject = Subject::new(first_subject_id, vec![second_group_id, first_group_id]);
-        let second_subject = Subject::new(second_subject_id, vec![first_group_id, second_group_id]);
+        let first_subject = TestSubject::new(first_subject_id, vec![second_group_id, first_group_id]);
+        let second_subject = TestSubject::new(second_subject_id, vec![first_group_id, second_group_id]);
         let mut first_group = Group::new(first_group_id, vec![first_subject],2);
         assert!(first_group.add_subject(second_subject).is_ok());
     }
@@ -102,8 +104,8 @@ mod tests {
         let second_subject_id = 2 as u64;
         let first_group_id = 101 as u64;
         let second_group_id = 102 as u64;
-        let first_subject = Subject::new(first_subject_id, vec![second_group_id, first_group_id]);
-        let second_subject = Subject::new(second_subject_id, vec![first_group_id, second_group_id]);
+        let first_subject = TestSubject::new(first_subject_id, vec![second_group_id, first_group_id]);
+        let second_subject = TestSubject::new(second_subject_id, vec![first_group_id, second_group_id]);
         let mut first_group = Group::new(first_group_id, vec![first_subject],1);
         assert!(first_group.add_subject(second_subject).is_err());
     }
