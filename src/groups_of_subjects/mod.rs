@@ -1,5 +1,5 @@
-//#[derive(Debug)]
 mod proposals;
+mod assignments;
 pub struct Subject {
     id: u64,
     preferences: Vec<u64>,
@@ -12,6 +12,9 @@ impl Subject {
     }
     pub fn new(id: u64, preferences: Vec<u64>) -> Subject {
         Subject { id, preferences }
+    }
+    pub fn id(&self) -> u64 {
+        self.id
     }
 }
 //#[derive(Debug)]
@@ -51,6 +54,11 @@ impl Group {
     fn highest_dissatisfaction(&self) -> i32 {
         self.highest_dissatisfaction
     }
+
+    pub fn capacity(&self) -> i32 {
+        self.capacity
+    }
+
 }
 #[cfg(test)]
 mod tests {
