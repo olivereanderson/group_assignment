@@ -1,5 +1,5 @@
 use crate::groups_of_subjects::Subject;
-
+#[derive(Debug)]
 pub struct TestSubject {
     id: u64,
     preferences: Vec<u64>,

@@ -1,5 +1,5 @@
 mod first_come_first_served; 
-use super::{Group, GroupMetaData, Subject};
+use super::{GroupMetadataProxy, GroupMetadata, Subject};
 use super::TestSubject;
 use std::fmt;
 
@@ -12,11 +12,11 @@ impl fmt::Display for TotalCapacityError{
 }
 pub trait Assigner{
     /// Assign the given subjects to the given groups 
-    fn assign<'a,T: Subject>(subjects: Vec<&'a mut T>, groups: Vec<&'a mut GroupMetaData>) -> Result<(),TotalCapacityError>;
+    fn assign<T: Subject>(subjects: &mut Vec<T>, metadata_collection: &mut Vec<GroupMetadata>) -> Result<(),TotalCapacityError>;
 
     /// This method must be called by assign and in the case of an error it must be forwarded. 
-    fn sufficient_capacity<T:Subject>(subjects: &Vec<&T>, groups: Vec<&GroupMetaData>) -> Result<(),TotalCapacityError> {
-        let capacity: i32 = groups.iter().map(|x| x.capacity()).sum(); 
+    fn sufficient_capacity<T:Subject>(subjects: &Vec<T>, metadata_collection: &Vec<GroupMetadata>) -> Result<(),TotalCapacityError> {
+        let capacity: i32 = metadata_collection.iter().map(|x| x.capacity()).sum(); 
         if capacity >= (subjects.len() as i32) {
             Ok(())
         } else {

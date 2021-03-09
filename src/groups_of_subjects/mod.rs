@@ -1,5 +1,5 @@
-mod proposals;
-//mod assignments;
+mod proposals;  
+mod assignments;
 
 mod test_utils;
 use test_utils::TestSubject; 
@@ -22,12 +22,12 @@ pub trait Subject {
 }
 
 /// Structural metadata for a given group
-pub struct GroupMetaData {
+pub struct GroupMetadata {
     id: u64,
     subject_ids: Vec<u64>,
     capacity: i32, 
 } 
-impl GroupMetaData {
+impl GroupMetadata {
     /// The corresponding group's id 
     pub fn id(&self) -> u64 {
         self.id
@@ -44,8 +44,8 @@ impl GroupMetaData {
     pub fn full(&self) -> bool {
         self.subject_ids.len() as i32 >= self.capacity
     }
-    pub fn new(id: u64, subject_ids: Vec<u64>, capacity: i32) -> GroupMetaData {
-        GroupMetaData{id,subject_ids,capacity}
+    pub fn new(id: u64, subject_ids: Vec<u64>, capacity: i32) -> GroupMetadata {
+        GroupMetadata{id,subject_ids,capacity}
     }
     /// Used when adding subjects to the corresponding group. A CapacityError is returned if the group is already full.  
     pub fn add_subject_id(&mut self, id: u64) -> Result<(),CapacityError> {
@@ -56,6 +56,7 @@ impl GroupMetaData {
             Ok(())
         }
     }
+
 }
 
 
@@ -68,10 +69,10 @@ impl fmt::Display for CapacityError{
     }
 }
 
-/// Proxy to a Groups metadata. The various assignment algorithms in this library 
+/// Proxy to a Groups metadata. Some of the assignment algorithms in this library 
 /// will update group metadata through these structures. 
 struct GroupMetadataProxy<'a, T=TestSubject> where T: Subject{
-    metadata: &'a mut GroupMetaData,
+    metadata: &'a mut GroupMetadata,
     subjects: Vec<&'a mut T>, // members to be assigned to the corresponding group  
     highest_dissatisfaction: i32, // cached highest dissatisfaction rating obtained from the subjects field. 
 }
@@ -84,7 +85,7 @@ impl<'a, T:Subject> GroupMetadataProxy<'a,T>{
         (self.subjects.len() as i32) > self.metadata.capacity()
     }
 
-    fn new(metadata: &'a mut GroupMetaData, mut subjects: Vec<&'a mut T>) -> Self {
+    fn new(metadata: &'a mut GroupMetadata, mut subjects: Vec<&'a mut T>) -> Self {
         let mut highest_dissatisfaction = 0;
         let id = metadata.id();
         if subjects.len() > 0 {
@@ -98,7 +99,7 @@ impl<'a, T:Subject> GroupMetadataProxy<'a,T>{
         }
     }
     // Should probably move this elsewhere 
-    fn new_subjects_with_first_choice(metadata: &'a mut GroupMetaData, subjects: Vec<&'a mut T>) -> Self {
+    fn new_subjects_with_first_choice(metadata: &'a mut GroupMetadata, subjects: Vec<&'a mut T>) -> Self {
         Self{metadata,subjects,highest_dissatisfaction: 0 as i32}
     }
 
@@ -122,7 +123,7 @@ mod tests {
         let second_group_id = 102 as u64;
         let mut first_subject = TestSubject::new(first_subject_id, vec![second_group_id, first_group_id]);
         let mut second_subject = TestSubject::new(second_subject_id, vec![first_group_id, second_group_id]);
-        let mut metadata = GroupMetaData::new(first_group_id,Vec::new(),2);
+        let mut metadata = GroupMetadata::new(first_group_id,Vec::new(),2);
         let first_group = GroupMetadataProxy::new(&mut metadata, vec![&mut first_subject, &mut second_subject]);
         assert_eq!(1, first_group.highest_dissatisfaction());
     }

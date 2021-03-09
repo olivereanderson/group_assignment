@@ -1,16 +1,16 @@
-use super::Group;
-use super::TestSubject;
+use super::GroupMetadataProxy;
 use crate::groups_of_subjects::Subject;
+use crate::groups_of_subjects::GroupMetadata;
 mod offers;
 use offers::MembershipOffer;
 use offers::TransferralOffer;
 
-impl<'a,T:Subject> Group<'a,T> {
+impl<'a,T:Subject> GroupMetadataProxy<'a,T> {
     /// Provides a membership offer if this group is either not full or the proposing subject
     /// is more eager to be a member of this group then the currently most dissatisfied member.
     fn handle_membership_proposal(&self, subject: &T) -> Option<MembershipOffer> {
-        let dissatisfaction_rating = subject.dissatisfaction(&self.id);
-        if (self.subjects.len() as i32) >= self.capacity {
+        let dissatisfaction_rating = subject.dissatisfaction(&self.id());
+        if (self.subjects.len() as i32) >= self.capacity() {
             let dissatisfaction_improvement =
                 dissatisfaction_rating - self.highest_dissatisfaction;
             if dissatisfaction_improvement >= 0 {
@@ -47,6 +47,7 @@ impl<'a,T:Subject> Group<'a,T> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::groups_of_subjects::TestSubject; 
 
     #[test]
     fn propose_transferral_none() {
@@ -58,15 +59,17 @@ mod tests {
     let first_group_id = 101 as u64;
     let second_group_id = 102 as u64;
     // Subjects
-    let first_subject =
+    let mut first_subject =
     TestSubject::new(first_subject_id, vec![second_group_id, first_group_id]);
-    let second_subject =
+    let mut second_subject =
     TestSubject::new(second_subject_id, vec![first_group_id, second_group_id]);
-    let third_subject = TestSubject::new(third_subject_id, vec![second_group_id,first_group_id]);
+    let mut third_subject = TestSubject::new(third_subject_id, vec![second_group_id,first_group_id]);
     // Groups 
-    let first_group = Group::new(first_group_id, vec![first_subject, second_subject], 3);
-    let second_group = Group::new(second_group_id, vec![third_subject],1);
-    let offer = first_group.propose_transferral(&second_group);
+    let mut first_group_metadata = GroupMetadata::new(first_group_id,Vec::new(),3);
+    let first_group_proxy = GroupMetadataProxy::new(&mut first_group_metadata, vec![&mut first_subject, &mut second_subject]);
+    let mut second_group_metadata = GroupMetadata::new(second_group_id, Vec::new(),1);
+    let second_group_proxy = GroupMetadataProxy::new(&mut second_group_metadata, vec![&mut third_subject]);
+    let offer = first_group_proxy.propose_transferral(&second_group_proxy);
     assert!(offer.is_none());
     }
 
@@ -81,16 +84,18 @@ mod tests {
     let first_group_id = 101 as u64;
     let second_group_id = 102 as u64;
     // Subjects
-    let first_subject =
+    let mut first_subject =
     TestSubject::new(first_subject_id, vec![second_group_id, first_group_id]);
-    let second_subject =
+    let mut second_subject =
     TestSubject::new(second_subject_id, vec![first_group_id, second_group_id]);
-    let third_subject = TestSubject::new(third_subject_id, vec![second_group_id,first_group_id]);
-    let fourth_subject = TestSubject::new(fourth_subject_id, vec![first_group_id,second_group_id]);
+    let mut third_subject = TestSubject::new(third_subject_id, vec![second_group_id,first_group_id]);
+    let mut fourth_subject = TestSubject::new(fourth_subject_id, vec![first_group_id,second_group_id]);
     // Groups 
-    let first_group = Group::new(first_group_id, vec![first_subject, second_subject], 2);
-    let second_group = Group::new(second_group_id, vec![third_subject, fourth_subject],2);
-    let actual_offer = second_group.propose_transferral(&first_group);
+    let mut first_group_metadata = GroupMetadata::new(first_group_id,Vec::new(),2);
+    let first_group_proxy = GroupMetadataProxy::new(&mut first_group_metadata, vec![&mut first_subject, &mut second_subject]);
+    let mut second_group_metadata = GroupMetadata::new(second_group_id,Vec::new(),2);
+    let second_group_proxy = GroupMetadataProxy::new(&mut second_group_metadata, vec![&mut third_subject, &mut fourth_subject]);
+    let actual_offer = second_group_proxy.propose_transferral(&first_group_proxy);
     let expected_offer = TransferralOffer::new(1,101,MembershipOffer::new(0,Some(-1)));
     assert_eq!(actual_offer.unwrap(),expected_offer);
     }
@@ -106,16 +111,18 @@ mod tests {
     let first_group_id = 101 as u64;
     let second_group_id = 102 as u64;
     // Subjects
-    let first_subject =
+    let mut first_subject =
     TestSubject::new(first_subject_id, vec![second_group_id, first_group_id]);
-    let second_subject =
+    let mut second_subject =
     TestSubject::new(second_subject_id, vec![first_group_id, second_group_id]);
-    let third_subject = TestSubject::new(third_subject_id, vec![second_group_id,first_group_id]);
-    let fourth_subject = TestSubject::new(fourth_subject_id, vec![second_group_id,first_group_id]);
+    let mut third_subject = TestSubject::new(third_subject_id, vec![second_group_id,first_group_id]);
+    let mut fourth_subject = TestSubject::new(fourth_subject_id, vec![second_group_id,first_group_id]);
     // Groups 
-    let first_group = Group::new(first_group_id, vec![first_subject, second_subject], 3);
-    let second_group = Group::new(second_group_id, vec![third_subject, fourth_subject],1);
-    let offer = second_group.propose_transferral(&first_group);
+    let mut first_group_metadata = GroupMetadata::new(first_group_id,Vec::new(),3);
+    let first_group_proxy = GroupMetadataProxy::new(&mut first_group_metadata, vec![&mut first_subject, &mut second_subject]);
+    let mut second_group_metadata = GroupMetadata::new(second_group_id, Vec::new(),1);
+    let second_group_proxy = GroupMetadataProxy::new(&mut second_group_metadata, vec![&mut third_subject, &mut fourth_subject]);
+    let offer = second_group_proxy.propose_transferral(&first_group_proxy);
     let expected_offer = TransferralOffer::new(1,101,MembershipOffer::new(1,None));
     assert_eq!(offer.unwrap(),expected_offer);
     }
@@ -131,14 +138,15 @@ mod tests {
     let first_group_id = 101 as u64;
     let second_group_id = 102 as u64;
     // Subjects
-    let first_subject =
+    let mut first_subject =
     TestSubject::new(first_subject_id, vec![second_group_id, first_group_id]);
-    let second_subject =
+    let mut second_subject =
     TestSubject::new(second_subject_id, vec![first_group_id, second_group_id]);
-    let third_subject = TestSubject::new(third_subject_id, vec![first_group_id, second_group_id]);
+    let mut third_subject = TestSubject::new(third_subject_id, vec![first_group_id, second_group_id]);
     // Group(s)
-    let first_group = Group::new(first_group_id, vec![first_subject, second_subject], 3);
-    let actual_offer = first_group.handle_membership_proposal(&third_subject).unwrap(); 
+    let mut first_group_metadata = GroupMetadata::new(first_group_id,Vec::new(),3);
+    let first_group_proxy = GroupMetadataProxy::new(&mut first_group_metadata, vec![&mut first_subject, &mut second_subject]);
+    let actual_offer = first_group_proxy.handle_membership_proposal(&third_subject).unwrap(); 
     let offer = MembershipOffer::new(0,None);
     assert_eq!(offer,actual_offer);
     }
@@ -153,19 +161,20 @@ mod tests {
     let first_group_id = 101 as u64;
     let second_group_id = 102 as u64;
     // Subjects
-    let first_subject =
+    let mut first_subject =
         TestSubject::new(first_subject_id, vec![second_group_id, first_group_id]);
-    let second_subject =
+    let mut second_subject =
         TestSubject::new(second_subject_id, vec![first_group_id, second_group_id]);
-    let third_subject = TestSubject::new(third_subject_id, vec![second_group_id, first_group_id]);
+    let mut third_subject = TestSubject::new(third_subject_id, vec![second_group_id, first_group_id]);
     // Group(s)
-    let first_group = Group::new(first_group_id, vec![first_subject], 1);
+    let mut first_group_metadata = GroupMetadata::new(first_group_id, Vec::new(),1); 
+    let first_group_proxy = GroupMetadataProxy::new(&mut first_group_metadata, vec![&mut first_subject]);
     // The second subject wants to be in the first group more than the first so an offer is given
-    let actual_offer = first_group.handle_membership_proposal(&second_subject).unwrap(); 
+    let actual_offer = first_group_proxy.handle_membership_proposal(&second_subject).unwrap(); 
     let expected_offer = MembershipOffer::new(0,Some(-1));
     assert_eq!(expected_offer,actual_offer);
     // The third subject does not want to be in the first group more than the first thus no offer is given
-    let no_offer = first_group.handle_membership_proposal(&third_subject).is_none();
+    let no_offer = first_group_proxy.handle_membership_proposal(&third_subject).is_none();
     assert!(no_offer);
     }
 }

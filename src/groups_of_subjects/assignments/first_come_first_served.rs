@@ -1,14 +1,14 @@
 use super::Assigner;
-use super::InsufficientCapacityError;
+use super::TotalCapacityError;
 use crate::groups_of_subjects::Subject;
 use super::TestSubject;
-use super:: Group;
-use crate::groups_of_subjects::GroupMetaData;
+use super:: GroupMetadataProxy;
+use crate::groups_of_subjects::GroupMetadata;
 use std::{collections::{HashMap}, fmt};
 
-impl<'a,T:Subject> Group<'a,T> {
+impl<'a,T:Subject> GroupMetadataProxy<'a,T> {
     fn add_subject(&mut self, subject: &'a mut T) -> Result<(),FullGroupError> {
-        if (self.subjects.len() as i32) < self.capacity {
+        if (self.subjects.len() as i32) < self.capacity() {
             self.subjects.push(subject);
             Ok(())
         } else {
@@ -16,7 +16,7 @@ impl<'a,T:Subject> Group<'a,T> {
         }
     }
     fn is_full(&self) -> bool {
-        self.subjects.len() as i32 >= self.capacity
+        self.subjects.len() as i32 >= self.capacity()
     }
 }
 
@@ -28,31 +28,20 @@ impl std::fmt::Debug for FullGroupError {
 }
 
 struct FirstComeFirstServed {}
-impl FirstComeFirstServed {
-    fn new() -> FirstComeFirstServed {
-        FirstComeFirstServed{}
-    }
-}
- 
 impl Assigner for FirstComeFirstServed {
-    fn assign<'a,T:Subject> (subjects: Vec<&'a mut T>, groups: Vec<&'a mut GroupMetaData>) -> Result<(),InsufficientCapacityError> {
-        Self::sufficient_capacity(&subjects, &groups)?;
-        if groups.len() == 0 {
-            Ok(groups)
-        } else {
-            let mut group_mapper : HashMap<_,_> = groups.into_iter().map(|x| (x.id(),x)).collect();
-            for subject in subjects.into_iter() {
-                group_mapper.iter_mut()
-                .filter(|(_key,group)| !group.is_full())
-                .min_by(|(key1,_grp1),(key2,grp2)| subject.dissatisfaction(key1).cmp(&subject.dissatisfaction(key2)))
-                .map(|(key,group)| group)
-                .unwrap().add_subject(subject).unwrap();
-                
-            }
-            // the next line is a workaround until HashMap.into_values() stabilizes
-            let keys: Vec<u64> = group_mapper.keys().map(|key| *key).collect();
-            Ok(keys.iter().filter_map(|key| group_mapper.remove(key)).collect())
-        }
+    fn assign<T: Subject>(subjects: &mut Vec<T>, metadata_collection: &mut Vec<GroupMetadata>) -> Result<(),TotalCapacityError> {
+        Self::sufficient_capacity(subjects, metadata_collection)?;
+
+       for subject in subjects.iter_mut() {
+           if let Some( metadata) = metadata_collection.iter_mut()
+           .filter(|x| !x.full())
+           .min_by(|x,y| {
+               subject.dissatisfaction(&x.id()).cmp(&subject.dissatisfaction(&y.id()))}) {
+               metadata.add_subject_id(subject.id()).unwrap();
+               subject.update_group_membership(Some(metadata.id()));
+           }
+       }
+       Ok(()) 
     }
 }
 
@@ -75,15 +64,30 @@ mod tests {
         let first_subject = TestSubject::new(first_subject_id, vec![first_group_id,third_group_id]);
         let second_subject = TestSubject::new(second_subject_id, vec![first_group_id, second_group_id]);
         let third_subject = TestSubject::new(third_subject_id, vec![first_group_id,second_group_id]);
-        let fourth_subject = TestSubject::new(third_subject_id, vec![second_group_id]);
-        let subjects = vec![first_subject,second_subject, third_subject, fourth_subject];
+        let fourth_subject = TestSubject::new(fourth_subject_id, vec![second_group_id]);
+        let mut subjects = vec![first_subject, second_subject, third_subject, fourth_subject];
         // groups 
-        let first_group = Group::new(first_group_id, Vec::new(),2);
-        let second_group = Group::new(second_group_id,Vec::new(),1 );
-        let third_group = Group::new(third_group_id,Vec::new(),3);
-        let groups = vec![first_group, second_group, third_group];
+        let first_group_metadata = GroupMetadata::new(first_group_id, Vec::new(),2);
+        let second_group_metadata = GroupMetadata::new(second_group_id,Vec::new(),1 );
+        let third_group_metadata = GroupMetadata::new(third_group_id,Vec::new(),3);
+        let mut metadata_collection = vec![first_group_metadata, second_group_metadata, third_group_metadata];
         // test 
-        let assigned_groups = FirstComeFirstServed::assign(subjects, groups).unwrap();
+        FirstComeFirstServed::assign(&mut subjects, &mut metadata_collection).unwrap();
+        // assert that the first subject is assigned to the first group 
+        assert_eq!(first_group_id, subjects[0].assigned_group_id().unwrap());
+        assert!(metadata_collection[0].subject_ids().contains(&first_subject_id));
+        
+        // assert that the second subject is assigned to the first group 
+        assert_eq!(first_group_id, subjects[1].assigned_group_id().unwrap());
+        assert!(metadata_collection[0].subject_ids().contains(&second_subject_id));
+
+        // assert that the third subject is assigned to the second group 
+        assert_eq!(second_group_id, subjects[2].assigned_group_id().unwrap());
+        assert!(metadata_collection[1].subject_ids().contains(&third_subject_id));
+
+        // assert that the fourth subject is assigned to the third group 
+        assert_eq!(third_group_id, subjects[3].assigned_group_id().unwrap());
+        assert!(metadata_collection[2].subject_ids().contains(&fourth_subject_id));
             
         }
         #[test]
@@ -92,10 +96,11 @@ mod tests {
         let second_subject_id = 2 as u64;
         let first_group_id = 101 as u64;
         let second_group_id = 102 as u64;
-        let first_subject = TestSubject::new(first_subject_id, vec![second_group_id, first_group_id]);
-        let second_subject = TestSubject::new(second_subject_id, vec![first_group_id, second_group_id]);
-        let mut first_group = Group::new(first_group_id, vec![first_subject],2);
-        assert!(first_group.add_subject(second_subject).is_ok());
+        let mut first_subject = TestSubject::new(first_subject_id, vec![second_group_id, first_group_id]);
+        let mut second_subject = TestSubject::new(second_subject_id, vec![first_group_id, second_group_id]);
+        let mut group_metadata = GroupMetadata::new(first_group_id, Vec::new(),2);
+        let mut first_group_proxy = GroupMetadataProxy::new(&mut group_metadata, vec![&mut first_subject]);
+        assert!(first_group_proxy.add_subject(&mut second_subject).is_ok());
     }
 
     #[test]
@@ -104,9 +109,10 @@ mod tests {
         let second_subject_id = 2 as u64;
         let first_group_id = 101 as u64;
         let second_group_id = 102 as u64;
-        let first_subject = TestSubject::new(first_subject_id, vec![second_group_id, first_group_id]);
-        let second_subject = TestSubject::new(second_subject_id, vec![first_group_id, second_group_id]);
-        let mut first_group = Group::new(first_group_id, vec![first_subject],1);
-        assert!(first_group.add_subject(second_subject).is_err());
+        let mut first_subject = TestSubject::new(first_subject_id, vec![second_group_id, first_group_id]);
+        let mut second_subject = TestSubject::new(second_subject_id, vec![first_group_id, second_group_id]);
+        let mut first_group_metadata = GroupMetadata::new(first_group_id, Vec::new(),1);
+        let mut first_group = GroupMetadataProxy::new(&mut first_group_metadata, vec![&mut first_subject]);
+        assert!(first_group.add_subject(&mut second_subject).is_err());
     }
 }
