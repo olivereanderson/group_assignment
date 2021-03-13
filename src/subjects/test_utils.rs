@@ -1,17 +1,20 @@
-use crate::groups_of_subjects::Subject;
+/// Module providing a simple type implementing the Subject trait that can be used in tests.
+use crate::subjects::Subject;
 #[derive(Debug)]
 pub struct TestSubject {
     id: u64,
     preferences: Vec<u64>,
-    assigned_group_id: Option<u64>
+    assigned_group_id: Option<u64>,
 }
-
 
 impl TestSubject {
     pub fn new(id: u64, preferences: Vec<u64>) -> TestSubject {
-        TestSubject { id, preferences, assigned_group_id: None }
+        TestSubject {
+            id,
+            preferences,
+            assigned_group_id: None,
+        }
     }
-
 }
 
 impl Subject for TestSubject {
@@ -22,13 +25,5 @@ impl Subject for TestSubject {
 
     fn id(&self) -> u64 {
         self.id
-    }
-
-    fn assigned_group_id(&self) -> Option<u64> {
-        self.assigned_group_id
-    }
-
-    fn update_group_membership(&mut self, new_group_id: Option<u64>) -> () {
-        self.assigned_group_id = new_group_id;
     }
 }

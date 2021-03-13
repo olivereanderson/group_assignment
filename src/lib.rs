@@ -1,3 +1,6 @@
-pub mod groups_of_subjects;
-use groups_of_subjects::*;
-
+pub mod subjects;
+use subjects::*;
+pub mod groups;
+use groups::*;
+pub mod assigners;
+use assigners::*;

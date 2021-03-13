@@ -4,14 +4,14 @@ use std::cmp::Ordering;
 use std::cmp::PartialOrd;
 
 #[derive(Eq, Debug)]
-/// An offer provided after a subject proposes to be a member of a given group. 
+/// An offer provided after a subject proposes to be a member of a given group.
 pub struct MembershipOffer {
-    // How dissatisfied the Subject is with the proposed group. Needs to be recorded 
-    // in order for membership offers to be compared. 
-    dissatisfaction_rating: i32, 
-    //None if no one has to leave the group upon offer acceptance. Otherwise a negative value must be provided 
+    // How dissatisfied the Subject is with the proposed group. Needs to be recorded
+    // in order for membership offers to be compared.
+    dissatisfaction_rating: i32,
+    //None if no one has to leave the group upon offer acceptance. Otherwise a negative value must be provided
     // corresponding to subject.dissatisfaction() - highest dissatisfaction rating amoung the groups current members
-    dissatisfaction_improvement: Option<i32>, 
+    dissatisfaction_improvement: Option<i32>,
 }
 
 impl MembershipOffer {
@@ -110,19 +110,11 @@ mod tests {
         assert!(!(with_misplacement < no_misplacement));
         assert!(!(no_misplacement == with_misplacement));
         // Now check the same for the ordering on transferral offers.
-        let transferral_offer_no_misplacement =
-            TransferralOffer::new(1, 101, no_misplacement);
-        let transferral_offer_with_misplacement =
-            TransferralOffer::new(2, 102, with_misplacement);
-        assert!(
-            transferral_offer_no_misplacement < transferral_offer_with_misplacement
-        );
-        assert!(
-            !(transferral_offer_with_misplacement < transferral_offer_no_misplacement)
-        );
-        assert!(
-            !(transferral_offer_no_misplacement == transferral_offer_with_misplacement)
-        );
+        let transferral_offer_no_misplacement = TransferralOffer::new(1, 101, no_misplacement);
+        let transferral_offer_with_misplacement = TransferralOffer::new(2, 102, with_misplacement);
+        assert!(transferral_offer_no_misplacement < transferral_offer_with_misplacement);
+        assert!(!(transferral_offer_with_misplacement < transferral_offer_no_misplacement));
+        assert!(!(transferral_offer_no_misplacement == transferral_offer_with_misplacement));
     }
 
     #[test]
@@ -134,23 +126,13 @@ mod tests {
         assert!(with_most_misplacement < with_misplacement);
         assert!(no_misplacement < with_misplacement);
         // Now check the same for the ordering on transferral offers.
-        let transferral_offer_no_misplacement =
-            TransferralOffer::new(1, 101, no_misplacement);
-        let transferral_offer_with_misplacement =
-            TransferralOffer::new(2, 102, with_misplacement);
+        let transferral_offer_no_misplacement = TransferralOffer::new(1, 101, no_misplacement);
+        let transferral_offer_with_misplacement = TransferralOffer::new(2, 102, with_misplacement);
         let transferral_offer_with_most_misplacement =
             TransferralOffer::new(3, 103, with_most_misplacement);
-        assert!(
-            transferral_offer_no_misplacement
-                < transferral_offer_with_most_misplacement
-        );
-        assert!(
-            transferral_offer_with_most_misplacement
-                < transferral_offer_with_misplacement
-        );
-        assert!(
-            transferral_offer_no_misplacement < transferral_offer_with_misplacement
-        );
+        assert!(transferral_offer_no_misplacement < transferral_offer_with_most_misplacement);
+        assert!(transferral_offer_with_most_misplacement < transferral_offer_with_misplacement);
+        assert!(transferral_offer_no_misplacement < transferral_offer_with_misplacement);
     }
 
     #[test]
@@ -162,8 +144,7 @@ mod tests {
         assert_eq!(no_misplacement, other_no_misplacement);
         assert_eq!(with_misplacement, other_with_misplacement);
         // Now we make similar tests for transferral offers with varying id's.
-        let transferral_offer_no_misplacement =
-            TransferralOffer::new(1, 101, no_misplacement);
+        let transferral_offer_no_misplacement = TransferralOffer::new(1, 101, no_misplacement);
         let other_transferral_no_misplacement =
             TransferralOffer::new(2, 102, other_no_misplacement);
         assert_eq!(
