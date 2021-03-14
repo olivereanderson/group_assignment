@@ -2,5 +2,5 @@ pub mod subjects;
 use subjects::*;
 pub mod groups;
 use groups::*;
-pub mod assigners;
-use assigners::*;
+pub mod assignment;
+use assignment::assigners::*;

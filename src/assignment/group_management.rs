@@ -1,45 +1,10 @@
-//! This module introduces the concept of an assigner
-//! A type implementing the assigner trait may assign subjects to groups
-pub mod first_come_first_served;
-pub mod propose_and_reject;
+use crate::assignment::errors::CapacityError;
 use crate::groups::Group;
 use crate::subjects::Subject;
 use std::collections::HashMap;
-use std::fmt;
-
-#[derive(Debug, Clone)]
-/// Error indicating that it is not possible to assign the given subjects to groups under the current capacity constraints.
-pub struct TotalCapacityError {}
-impl fmt::Display for TotalCapacityError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Insufficient capacity: The combined group capacity is less than the number of subjects")
-    }
-}
-pub trait Assigner {
-    /// Assign the given subjects to the given groups
-    /// When the total capacity of the groups is sufficient a pair of maps (subject ids -> group ids, group ids -> subject ids) is returned
-    fn assign<S: Subject, G: Group>(
-        subjects: &Vec<S>,
-        groups: &Vec<G>,
-    ) -> Result<(HashMap<u64, u64>, HashMap<u64, Vec<u64>>), TotalCapacityError>;
-
-    /// This method must be called by assign and in the case of an error it must be forwarded.
-    fn sufficient_capacity<S: Subject, G: Group>(
-        subjects: &Vec<S>,
-        groups: &Vec<G>,
-    ) -> Result<(), TotalCapacityError> {
-        let capacity: i32 = groups.iter().map(|x| x.capacity()).sum();
-        if capacity >= (subjects.len() as i32) {
-            Ok(())
-        } else {
-            Err(TotalCapacityError {})
-        }
-    }
-}
-
-/// Trait enabling group membership management.
+/// Trait for group membership management.
 /// The assigners in this library will typically use types implementing this trait.
-trait GroupManager: Group {
+pub(super) trait GroupManager: Group {
     /// A many to one mapping from the ids of the managed group's subjects to the group's id
     fn subjects_ids_to_group_id(&self) -> HashMap<u64, u64>;
 
@@ -53,7 +18,7 @@ trait GroupManager: Group {
 /// Transforms a vector of group managers into a pair of mappings representing group assignments.
 /// The first of these mappings takes subjects ids to the id of their assigned group.
 /// The second mapping takes an id of a group and returns a vector of the ids of the subjects assigned to this group.
-fn assign_from_group_managers<M: GroupManager>(
+pub(super) fn assign_from_group_managers<M: GroupManager>(
     mut group_managers: Vec<M>,
 ) -> (HashMap<u64, u64>, HashMap<u64, Vec<u64>>) {
     let (init_subjects_mapper, init_groups_mapper): (HashMap<u64, u64>, HashMap<u64, Vec<u64>>) =
@@ -80,14 +45,39 @@ fn assign_from_group_managers<M: GroupManager>(
     )
 }
 
+/// Group managers who are able to add subjects to their group
+pub(super) trait GrowingGroupManager<'a, S>: GroupManager {
+    fn add_subject(&mut self, subject: &'a S) -> Result<(), CapacityError>;
+}
+
+pub(super) fn subject_to_best_available_group_manager<
+    'a,
+    S: Subject,
+    M: GrowingGroupManager<'a, S>,
+>(
+    subject: &'a S,
+    mut group_managers: Vec<M>,
+) -> Vec<M> {
+    group_managers
+        .iter_mut()
+        .filter(|x| !x.full())
+        .min_by(|x, y| {
+            subject
+                .dissatisfaction(&x.id())
+                .cmp(&subject.dissatisfaction(&y.id()))
+        })
+        .map(|x| x.add_subject(subject).unwrap());
+
+    group_managers
+}
 /// The assigners in this library will typically use some decoration of this data structure to provide assignments
-struct SimpleGroupManager<'a, S, G>
+pub(super) struct SimpleGroupManager<'a, S, G>
 where
     S: Subject,
     G: Group,
 {
-    group: &'a G,
-    subjects: Vec<&'a S>, // members to be assigned to the corresponding group
+    pub(super) group: &'a G,
+    pub(super) subjects: Vec<&'a S>, // members to be assigned to the corresponding group
 }
 
 impl<'a, S: Subject, G: Group> Group for SimpleGroupManager<'a, S, G> {
@@ -101,7 +91,7 @@ impl<'a, S: Subject, G: Group> Group for SimpleGroupManager<'a, S, G> {
 }
 
 impl<'a, S: Subject, G: Group> SimpleGroupManager<'a, S, G> {
-    fn new(group: &'a G, subjects: Vec<&'a S>) -> Self {
+    pub(super) fn new(group: &'a G, subjects: Vec<&'a S>) -> Self {
         Self { group, subjects }
     }
 }
@@ -123,5 +113,16 @@ impl<'a, S: Subject, G: Group> GroupManager for SimpleGroupManager<'a, S, G> {
         let mut map: HashMap<u64, Vec<u64>> = HashMap::new();
         map.insert(id, subject_ids);
         map
+    }
+}
+
+impl<'a, S: Subject, G: Group> GrowingGroupManager<'a, S> for SimpleGroupManager<'a, S, G> {
+    fn add_subject(&mut self, subject: &'a S) -> Result<(), CapacityError> {
+        if self.full() {
+            Err(CapacityError {})
+        } else {
+            self.subjects.push(subject);
+            Ok(())
+        }
     }
 }

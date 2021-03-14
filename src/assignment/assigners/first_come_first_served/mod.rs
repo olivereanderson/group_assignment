@@ -2,33 +2,13 @@
 //! This module implements an assigner according to the "first come first served" principle
 use super::Assigner;
 use super::GroupManager;
+use super::GrowingGroupManager;
 use super::SimpleGroupManager;
 use super::TotalCapacityError;
 use crate::groups::Group;
 use crate::subjects::Subject;
 use std::collections::HashMap;
-use std::fmt;
-#[derive(Debug, Clone)]
-/// Error indicating that a group is already full while trying to add another subject.  
-struct CapacityError {}
-impl fmt::Display for CapacityError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "Insufficient capacity: The group capacity is less than the number of subjects"
-        )
-    }
-}
-impl<'a, S: Subject, T: Group> SimpleGroupManager<'a, S, T> {
-    fn add_subject(&mut self, subject: &'a S) -> Result<(), CapacityError> {
-        if self.full() {
-            Err(CapacityError {})
-        } else {
-            self.subjects.push(subject);
-            Ok(())
-        }
-    }
-}
+
 pub struct FirstComeFirstServed {}
 impl Assigner for FirstComeFirstServed {
     /// The subjects get assigned to their most preferred available group in turn.
@@ -37,24 +17,33 @@ impl Assigner for FirstComeFirstServed {
         groups: &Vec<G>,
     ) -> Result<(HashMap<u64, u64>, HashMap<u64, Vec<u64>>), TotalCapacityError> {
         Self::sufficient_capacity(subjects, groups)?;
-        let mut group_managers: Vec<_> = groups
+        let group_managers: Vec<_> = groups
             .iter()
             .map(|g| SimpleGroupManager::new(g, Vec::new()))
             .collect();
-        for subject in subjects.iter() {
-            group_managers
-                .iter_mut()
-                .filter(|x| !x.full())
-                .min_by(|x, y| {
-                    subject
-                        .dissatisfaction(&x.id())
-                        .cmp(&subject.dissatisfaction(&y.id()))
-                })
-                .map(|x| x.add_subject(subject).unwrap());
-        }
+
+        let group_managers =
+            subjects_to_best_available_group_manager_by_the_first_come_first_served_principle(
+                subjects,
+                group_managers,
+            );
 
         Ok(super::assign_from_group_managers(group_managers))
     }
+}
+
+fn subjects_to_best_available_group_manager_by_the_first_come_first_served_principle<
+    'a,
+    S: Subject,
+    M: GrowingGroupManager<'a, S>,
+>(
+    subjects: &'a Vec<S>,
+    mut group_managers: Vec<M>,
+) -> Vec<M> {
+    for subject in subjects.iter() {
+        group_managers = super::subject_to_best_available_group_manager(subject, group_managers);
+    }
+    group_managers
 }
 
 #[cfg(test)]

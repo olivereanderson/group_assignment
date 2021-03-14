@@ -1,13 +1,18 @@
 pub(super) use crate::groups::Group;
 use std::collections::HashMap;
-mod offers;
-pub(super) use crate::assigners::GroupManager;
-pub(super) use crate::assigners::SimpleGroupManager;
-use crate::subjects::Subject;
+pub(super) mod offers;
+pub(super) use crate::assignment::assigners::GroupManager;
+pub(super) use crate::assignment::assigners::GrowingGroupManager;
+pub(super) use crate::assignment::assigners::SimpleGroupManager;
+use crate::{assignment::errors::CapacityError, subjects::Subject};
 use offers::MembershipOffer;
 use offers::TransferralOffer;
 
-/// Decorator pattern
+// Decorator pattern
+// The proposal handling group manager extends the simple group manager with various methods and always
+// caches how dissatisfied its least happy member is with this group.
+// To be able to easily access the most dissatisfied member we always keep a reference to this subject
+// at the end of the subjects vector (in the underlying simple group manager)
 pub(super) struct ProposalHandlingGroupManager<'a, S, G>
 where
     S: Subject,
@@ -15,6 +20,28 @@ where
 {
     delegate: SimpleGroupManager<'a, S, G>,
     highest_dissatisfaction: i32,
+}
+
+impl<'a, S: Subject, G: Group> GrowingGroupManager<'a, S>
+    for ProposalHandlingGroupManager<'a, S, G>
+{
+    fn add_subject(&mut self, subject: &'a S) -> Result<(), CapacityError> {
+        if self.full() {
+            Err(CapacityError {})
+        } else {
+            let subject_dissatisfaction = subject.dissatisfaction(&self.id());
+            if subject_dissatisfaction < self.highest_dissatisfaction {
+                // we always keep a member with the highest dissatisfaction at the end of the subjects vector
+                let least_happy_member = self.delegate.subjects.pop().unwrap();
+                self.delegate.subjects.push(subject);
+                self.delegate.subjects.push(least_happy_member);
+            } else {
+                self.highest_dissatisfaction = subject_dissatisfaction;
+                self.delegate.subjects.push(subject);
+            }
+            Ok(())
+        }
+    }
 }
 
 impl<'a, S: Subject, G: Group> Group for ProposalHandlingGroupManager<'a, S, G> {
