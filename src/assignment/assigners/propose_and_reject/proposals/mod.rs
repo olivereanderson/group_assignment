@@ -13,6 +13,7 @@ use offers::TransferralOffer;
 // caches how dissatisfied its least happy member is with this group.
 // To be able to easily access the most dissatisfied member we always keep a reference to this subject
 // at the end of the subjects vector (in the underlying simple group manager)
+#[derive(Debug)]
 pub(super) struct ProposalHandlingGroupManager<'a, S, G>
 where
     S: Subject,
@@ -29,16 +30,31 @@ impl<'a, S: Subject, G: Group> GrowingGroupManager<'a, S>
         if self.full() {
             Err(CapacityError {})
         } else {
-            let subject_dissatisfaction = subject.dissatisfaction(&self.id());
-            if subject_dissatisfaction < self.highest_dissatisfaction {
-                // we always keep a member with the highest dissatisfaction at the end of the subjects vector
-                let least_happy_member = self.delegate.subjects.pop().unwrap();
-                self.delegate.subjects.push(subject);
-                self.delegate.subjects.push(least_happy_member);
+            // We will add the subject and make sure that we keep the members sorted by dissatisfaction
+            let id = self.id();
+            let new_member_dissatisfaction_rating = subject.dissatisfaction(&id);
+
+            if let Some(position) = self
+                .delegate
+                .subjects
+                .iter()
+                .rposition(|x| x.dissatisfaction(&id) <= new_member_dissatisfaction_rating)
+            {
+                //print!("\r\n Position is : {:?} \r\n", position);
+                self.delegate.subjects.insert(position, subject);
             } else {
-                self.highest_dissatisfaction = subject_dissatisfaction;
-                self.delegate.subjects.push(subject);
+                print!(
+                    "group : {:?}, has {:?} members",
+                    self.id(),
+                    self.delegate.subjects.len()
+                );
+                self.delegate.subjects.insert(0, subject);
             }
+            self.highest_dissatisfaction = self
+                .delegate
+                .subjects
+                .last()
+                .map_or(0, |x| x.dissatisfaction(&id));
             Ok(())
         }
     }
@@ -120,13 +136,45 @@ impl<'a, S: Subject, G: Group> ProposalHandlingGroupManager<'a, S, G> {
             })
             .map(|(key, subject)| (key, other.handle_membership_proposal(subject)))
         {
-            Some(TransferralOffer::new(
-                lookup_key,
-                proposed_group_id,
-                membership_offer,
-            ))
+            Some(TransferralOffer::new(lookup_key, membership_offer))
         } else {
             None
+        }
+    }
+
+    // removes the least happy member from the group manager and adds another member.
+    // The removed member is returned.
+    fn replace_least_happy_member(&mut self, subject: &'a S) -> &'a S {
+        let least_happy_member = self.delegate.subjects.pop().unwrap(); // The last entry is always least happy with this group
+        self.add_subject(subject);
+        least_happy_member
+    }
+
+    // Removes a member from this group manager and adds it to another under the conditions of a transferral offer.
+    // If the other group manager is at full capacity its least happy member will be removed
+    pub(super) fn transfer(&mut self, other: &mut Self, offer: TransferralOffer) -> Option<&'a S> {
+        let subject_to_be_transferred = self.delegate.subjects.remove(offer.subject_lookup_key);
+        let mut replaced_subject = None;
+        if offer.replace_least_happy_member_upon_transferral() {
+            replaced_subject = Some(other.replace_least_happy_member(subject_to_be_transferred));
+        } else {
+            other.add_subject(subject_to_be_transferred);
+        }
+        replaced_subject
+    }
+    // Adds a member without taking capacity limitations into consideration
+    // This method is typically used to return members to the group of their first choice after being replaced by
+    // some other member in their previously assigned group.
+    pub(super) fn force_add_subject(&mut self, subject: &'a S) -> () {
+        let id = self.id();
+        if let Some(position) = self
+            .delegate
+            .subjects
+            .iter()
+            .position(|x| subject.dissatisfaction(&id) <= x.dissatisfaction(&id))
+        {
+            self.delegate.subjects.insert(position, subject);
+            // We assume that the subject will be happy to be added to this group and therefore use position over rposition.
         }
     }
 }
@@ -210,7 +258,7 @@ mod tests {
         let second_group_proxy =
             ProposalHandlingGroupManager::new(&second_group, vec![&third_subject, &fourth_subject]);
         let actual_offer = second_group_proxy.propose_transferral(&first_group_proxy);
-        let expected_offer = TransferralOffer::new(1, 101, MembershipOffer::new(0, Some(-1)));
+        let expected_offer = TransferralOffer::new(1, MembershipOffer::new(0, Some(-1)));
         assert_eq!(actual_offer.unwrap(), expected_offer);
     }
 
@@ -241,7 +289,7 @@ mod tests {
         let second_group_manager =
             ProposalHandlingGroupManager::new(&second_group, vec![&third_subject, &fourth_subject]);
         let offer = second_group_manager.propose_transferral(&first_group_manager);
-        let expected_offer = TransferralOffer::new(1, 101, MembershipOffer::new(1, None));
+        let expected_offer = TransferralOffer::new(1, MembershipOffer::new(1, None));
         assert_eq!(offer.unwrap(), expected_offer);
     }
 

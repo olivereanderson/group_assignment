@@ -71,6 +71,7 @@ pub(super) fn subject_to_best_available_group_manager<
     group_managers
 }
 /// The assigners in this library will typically use some decoration of this data structure to provide assignments
+#[derive(Debug)]
 pub(super) struct SimpleGroupManager<'a, S, G>
 where
     S: Subject,

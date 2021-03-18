@@ -1,4 +1,7 @@
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    fmt::Debug,
+};
 
 use super::Assigner;
 use super::GroupManager;
@@ -19,19 +22,31 @@ impl Assigner for ProposeAndReject {
         Self::sufficient_capacity(subjects, groups)?;
         let group_managers = first_step(subjects, groups);
         // Partition the managers into those whose corresponding groups will be overfull, full, and available respectively
-        let (full, available): (
+        let (full, mut available): (
             Vec<ProposalHandlingGroupManager<S, G>>,
             Vec<ProposalHandlingGroupManager<S, G>>,
         ) = group_managers.into_iter().partition(|x| x.full());
-        let (overfull, exactly_full): (
+        let (mut overfull, mut bystanders): (
             Vec<ProposalHandlingGroupManager<S, G>>,
             Vec<ProposalHandlingGroupManager<S, G>>,
         ) = full.into_iter().partition(|x| x.overfull());
-        let mut resolved_managers: Vec<ProposalHandlingGroupManager<S, G>> = Vec::new();
-        if overfull.len() as i32 == 0 as i32 {
-            // Everyone will be assigned to a group with their lowest possible dissatisfaction rating and we are done :)
-            resolved_managers = available.into_iter().chain(exactly_full).collect();
+        print!("\r\n overfull length: {:?} \r\n", overfull.len());
+        print!("\r\n bystanders length: {:?} \r\n", bystanders.len());
+        print!("\r\n available length: {:?} \r\n", available.len());
+        while overfull.len() > 0 {
+            // The following is a workaround until destructuring assignments stabilizes: See https://github.com/rust-lang/rust/issues/71126
+            let (next_overfull, next_bystanders, next_available) =
+                proposal_round(overfull, bystanders, available);
+            overfull = next_overfull;
+            bystanders = next_bystanders;
+            available = next_available;
+
+            print!("\r\n overfull length: {:?} \r\n", overfull.len());
+            print!("\r\n bystanders length: {:?} \r\n", bystanders.len());
+            print!("\r\n available length: {:?} \r\n", available.len());
         }
+        let resolved_managers: Vec<ProposalHandlingGroupManager<S, G>> =
+            available.into_iter().chain(bystanders).collect();
 
         Ok(super::assign_from_group_managers(resolved_managers))
     }
@@ -105,23 +120,80 @@ fn handle_subjects_without_first_choice_first_step<'a, S: Subject, G: Group>(
 
 fn proposal_round<'a, S: Subject, G: Group>(
     mut overfull: Vec<ProposalHandlingGroupManager<'a, S, G>>,
-    mut bystander: Vec<ProposalHandlingGroupManager<'a,S,G>>,
+    mut bystanders: Vec<ProposalHandlingGroupManager<'a, S, G>>,
     mut available: Vec<ProposalHandlingGroupManager<'a, S, G>>,
 ) -> (
     Vec<ProposalHandlingGroupManager<'a, S, G>>,
-    Vec<ProposalHandlingGroupManager<'a,S,G>>,
+    Vec<ProposalHandlingGroupManager<'a, S, G>>,
     Vec<ProposalHandlingGroupManager<'a, S, G>>,
 ) {
-   for overfull_group in overfull.iter_mut(){
-       let (index_of_available,offer) = available.iter()
-       .enumerate()
-       .map(|(i,x)| (i,overfull_group.propose_transferral(x)))
-       .filter(|(i,x)| x.is_some())
-       .min_by(|(i,x),(j,y)| x.cmp(y))
-       .map(|(i,x)| (i,x.unwrap()))
-       .unwrap();
-   } 
-   (overfull,bystander,available)
+    let mut subjects_for_reprocessing: Vec<&S> = Vec::new();
+    for overfull_group in overfull.iter_mut() {
+        let (transfer_destination_key, offer) = available
+            .iter()
+            .enumerate()
+            .map(|(i, x)| (i, overfull_group.propose_transferral(x)))
+            .filter(|(i, x)| x.is_some())
+            .min_by(|(i, x), (j, y)| x.cmp(y))
+            .map(|(i, x)| (i, x.unwrap()))
+            .unwrap();
+        print!(
+            "\r\n transfer destination key: {:?} \r\n",
+            transfer_destination_key
+        );
+        print!("\r\n offer: {:?} \r\n", offer);
+        if let Some(potentially_replaced_subject) =
+            overfull_group.transfer(available.get_mut(transfer_destination_key).unwrap(), offer)
+        {
+            subjects_for_reprocessing.push(potentially_replaced_subject);
+            print!("\r\n added subject for reprocessing \r\n")
+        }
+    }
+    proposal_managers_for_next_proposal_round(
+        overfull,
+        bystanders,
+        available,
+        subjects_for_reprocessing,
+    )
+}
+
+// Adds the subjects for reprocessing to the group manager of their first choice
+// returns a triple consisting of the overful managers, the bystanders and the available managers repsectively
+fn proposal_managers_for_next_proposal_round<'a, S: Subject, G: Group>(
+    mut overfull: Vec<ProposalHandlingGroupManager<'a, S, G>>,
+    mut bystanders: Vec<ProposalHandlingGroupManager<'a, S, G>>,
+    mut available: Vec<ProposalHandlingGroupManager<'a, S, G>>,
+    mut subjects_for_reprocessing: Vec<&'a S>,
+) -> (
+    Vec<ProposalHandlingGroupManager<'a, S, G>>,
+    Vec<ProposalHandlingGroupManager<'a, S, G>>,
+    Vec<ProposalHandlingGroupManager<'a, S, G>>,
+) {
+    let mut managers_for_update: Vec<ProposalHandlingGroupManager<'a, S, G>> =
+        overfull.into_iter().chain(bystanders.into_iter()).collect();
+    for subject in subjects_for_reprocessing {
+        managers_for_update = subject_to_most_desired_group_manager(managers_for_update, subject);
+    }
+    let (overfull, bystanders): (
+        Vec<ProposalHandlingGroupManager<'a, S, G>>,
+        Vec<ProposalHandlingGroupManager<'a, S, G>>,
+    ) = managers_for_update.into_iter().partition(|x| x.overfull());
+    (overfull, bystanders, available)
+}
+
+fn subject_to_most_desired_group_manager<'a, S: Subject, G: Group>(
+    mut proposal_managers: Vec<ProposalHandlingGroupManager<'a, S, G>>,
+    subject: &'a S,
+) -> Vec<ProposalHandlingGroupManager<'a, S, G>> {
+    proposal_managers
+        .iter_mut()
+        .min_by(|x, y| {
+            subject
+                .dissatisfaction(&x.id())
+                .cmp(&subject.dissatisfaction(&y.id()))
+        })
+        .map(|x| x.force_add_subject(subject));
+    proposal_managers
 }
 
 #[cfg(test)]
@@ -130,6 +202,75 @@ mod tests {
     use crate::groups::test_utils::TestGroup;
     use crate::subjects::test_utils::TestSubject;
 
+    #[test]
+    fn assign_no_necessary_replacements() {
+        let subject_ids = vec![1_u64, 2, 3, 4];
+        let group_ids = vec![101_u64, 102, 103];
+        let mut preferences: HashMap<u64, Vec<u64>> = HashMap::new();
+        let preference_by_order = vec![group_ids[0], group_ids[1], group_ids[2]];
+        preferences.insert(subject_ids[0], preference_by_order.clone());
+        preferences.insert(subject_ids[1], preference_by_order.clone());
+        preferences.insert(subject_ids[2], preference_by_order);
+        preferences.insert(
+            subject_ids[3],
+            vec![group_ids[0], group_ids[2], group_ids[1]],
+        );
+        let capacities: HashMap<u64, i32> =
+            [(group_ids[0], 2), (group_ids[1], 1), (group_ids[2], 1)]
+                .iter()
+                .cloned()
+                .collect();
+        let subjects: Vec<TestSubject> = subject_ids
+            .iter()
+            .map(|id| TestSubject::new(*id, preferences[id].clone()))
+            .collect();
+        let groups: Vec<TestGroup> = group_ids
+            .iter()
+            .map(|id| TestGroup::new(*id, capacities[id]))
+            .collect();
+        let (subject_ids_to_group_ids, group_ids_to_subjects_ids) =
+            ProposeAndReject::assign(&subjects, &groups).unwrap();
+        print!(
+            "\r\n subject ids to group ids mapping : {:?} \r\n",
+            subject_ids_to_group_ids
+        );
+        print!(
+            "\r\n group ids to subjects ids mapping: {:?} \r\n",
+            group_ids_to_subjects_ids
+        );
+        let number_of_assigned_subjects: i32 = groups
+            .iter()
+            .map(|x| group_ids_to_subjects_ids[&x.id()].len() as i32)
+            .sum();
+
+        assert_eq!(number_of_assigned_subjects, subject_ids.len() as i32);
+        let total_dissatisfaction: i32 = subjects
+            .iter()
+            .map(|x| x.dissatisfaction(&subject_ids_to_group_ids[&x.id()]))
+            .sum();
+        assert_eq!(total_dissatisfaction, 2);
+    }
+
+    #[test]
+    fn assign_necessary_replacement() {
+        struct TestSubjectWithDissatisfactionMapper {
+            id: u64,
+            dissatisfaction_mapper: HashMap<u64,i32>,
+        }
+
+        impl Subject for TestSubjectWithDissatisfactionMapper {
+
+            fn id(&self) ->u64 {
+                self.id
+            }
+
+            fn dissatisfaction(&self, group_id: &u64) -> i32 {
+                self.dissatisfaction_mapper[group_id]
+            }
+        }
+
+
+    }
     #[test]
     fn assign_complete_after_first_step() {
         // Subject ids
