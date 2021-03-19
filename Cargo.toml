@@ -1,9 +1,10 @@
 [package]
 name = "group_assignment"
 version = "0.1.0"
-authors = ["Oliver_Anderson <oliver.anderson@oxid-esales.com>"]
+authors = ["Oliver_Anderson <olivereanderson.datascience@gmail.com>"]
 edition = "2018"
-
+description = "A simple library for preference based group assignments"
+license = "MIT"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]

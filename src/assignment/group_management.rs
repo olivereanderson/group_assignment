@@ -4,25 +4,25 @@ use crate::subjects::Subject;
 use std::collections::HashMap;
 /// Trait for group membership management.
 /// The assigners in this library will typically use types implementing this trait.
-pub(super) trait GroupManager: Group {
-    /// A many to one mapping from the ids of the managed group's subjects to the group's id
+pub(super) trait GroupRegistry: Group {
+    /// A many to one mapping from the ids of the group registry's subjects to the group's id
     fn subjects_ids_to_group_id(&self) -> HashMap<u64, u64>;
 
-    /// A one to many mapping from the managed group's id to the ids of its subjects
+    /// A one to many mapping from the group registry's id to the ids of its subjects
     fn group_id_to_subject_ids(&self) -> HashMap<u64, Vec<u64>>;
 
     /// Indicates whether the managed group is full
     fn full(&self) -> bool;
 }
 
-/// Transforms a vector of group managers into a pair of mappings representing group assignments.
+/// Transforms a vector of group registries into a pair of mappings representing group assignments.
 /// The first of these mappings takes subjects ids to the id of their assigned group.
 /// The second mapping takes an id of a group and returns a vector of the ids of the subjects assigned to this group.
-pub(super) fn assign_from_group_managers<M: GroupManager>(
-    mut group_managers: Vec<M>,
+pub(super) fn assign_from_group_registries<M: GroupRegistry>(
+    mut group_registries: Vec<M>,
 ) -> (HashMap<u64, u64>, HashMap<u64, Vec<u64>>) {
     let (init_subjects_mapper, init_groups_mapper): (HashMap<u64, u64>, HashMap<u64, Vec<u64>>) =
-        group_managers
+        group_registries
             .pop()
             .map(|x| (x.subjects_ids_to_group_id(), x.group_id_to_subject_ids()))
             .unwrap_or((HashMap::new(), HashMap::new()));
@@ -30,7 +30,7 @@ pub(super) fn assign_from_group_managers<M: GroupManager>(
     let (subject_identifiers_to_group_identifiers, group_identifiers_to_subject_identifiers): (
         HashMap<u64, u64>,
         HashMap<u64, Vec<u64>>,
-    ) = group_managers
+    ) = group_registries
         .iter()
         .map(|x| (x.subjects_ids_to_group_id(), x.group_id_to_subject_ids()))
         .fold((init_subjects_mapper, init_groups_mapper), |mut acc, x| {
@@ -45,20 +45,20 @@ pub(super) fn assign_from_group_managers<M: GroupManager>(
     )
 }
 
-/// Group managers who are able to add subjects to their group
-pub(super) trait GrowingGroupManager<'a, S>: GroupManager {
-    fn add_subject(&mut self, subject: &'a S) -> Result<(), CapacityError>;
+/// Group registries with the ability to register new members 
+pub(super) trait GrowingGroupRegistry<'a, S>: GroupRegistry {
+    fn register_subject(&mut self, subject: &'a S) -> Result<(), CapacityError>;
 }
 
-pub(super) fn subject_to_best_available_group_manager<
+pub(super) fn subject_to_best_available_group_registry<
     'a,
     S: Subject,
-    M: GrowingGroupManager<'a, S>,
+    M: GrowingGroupRegistry<'a, S>,
 >(
     subject: &'a S,
-    mut group_managers: Vec<M>,
+    mut group_registries: Vec<M>,
 ) -> Vec<M> {
-    group_managers
+    group_registries
         .iter_mut()
         .filter(|x| !x.full())
         .min_by(|x, y| {
@@ -66,13 +66,13 @@ pub(super) fn subject_to_best_available_group_manager<
                 .dissatisfaction(&x.id())
                 .cmp(&subject.dissatisfaction(&y.id()))
         })
-        .map(|x| x.add_subject(subject).unwrap());
+        .map(|x| x.register_subject(subject).unwrap());
 
-    group_managers
+    group_registries
 }
 /// The assigners in this library will typically use some decoration of this data structure to provide assignments
 #[derive(Debug)]
-pub(super) struct SimpleGroupManager<'a, S, G>
+pub(super) struct SimpleGroupRegistry<'a, S, G>
 where
     S: Subject,
     G: Group,
@@ -81,7 +81,7 @@ where
     pub(super) subjects: Vec<&'a S>, // members to be assigned to the corresponding group
 }
 
-impl<'a, S: Subject, G: Group> Group for SimpleGroupManager<'a, S, G> {
+impl<'a, S: Subject, G: Group> Group for SimpleGroupRegistry<'a, S, G> {
     fn id(&self) -> u64 {
         self.group.id()
     }
@@ -91,13 +91,13 @@ impl<'a, S: Subject, G: Group> Group for SimpleGroupManager<'a, S, G> {
     }
 }
 
-impl<'a, S: Subject, G: Group> SimpleGroupManager<'a, S, G> {
+impl<'a, S: Subject, G: Group> SimpleGroupRegistry<'a, S, G> {
     pub(super) fn new(group: &'a G, subjects: Vec<&'a S>) -> Self {
         Self { group, subjects }
     }
 }
 
-impl<'a, S: Subject, G: Group> GroupManager for SimpleGroupManager<'a, S, G> {
+impl<'a, S: Subject, G: Group> GroupRegistry for SimpleGroupRegistry<'a, S, G> {
     fn full(&self) -> bool {
         self.subjects.len() as i32 >= self.capacity()
     }
@@ -117,8 +117,8 @@ impl<'a, S: Subject, G: Group> GroupManager for SimpleGroupManager<'a, S, G> {
     }
 }
 
-impl<'a, S: Subject, G: Group> GrowingGroupManager<'a, S> for SimpleGroupManager<'a, S, G> {
-    fn add_subject(&mut self, subject: &'a S) -> Result<(), CapacityError> {
+impl<'a, S: Subject, G: Group> GrowingGroupRegistry<'a, S> for SimpleGroupRegistry<'a, S, G> {
+    fn register_subject(&mut self, subject: &'a S) -> Result<(), CapacityError> {
         if self.full() {
             Err(CapacityError {})
         } else {

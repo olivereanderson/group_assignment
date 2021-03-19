@@ -1,32 +1,32 @@
 pub(super) use crate::groups::Group;
 use std::collections::HashMap;
 pub(super) mod offers;
-pub(super) use crate::assignment::assigners::GroupManager;
-pub(super) use crate::assignment::assigners::GrowingGroupManager;
-pub(super) use crate::assignment::assigners::SimpleGroupManager;
+pub(super) use crate::assignment::assigners::GroupRegistry;
+pub(super) use crate::assignment::assigners::GrowingGroupRegistry;
+pub(super) use crate::assignment::assigners::SimpleGroupRegistry;
 use crate::{assignment::errors::CapacityError, subjects::Subject};
 use offers::MembershipOffer;
 use offers::TransferralOffer;
 
 // Decorator pattern
-// The proposal handling group manager extends the simple group manager with various methods and always
+// The proposal handling group registry extends the simple group registry with various methods and always
 // caches how dissatisfied its least happy member is with this group.
 // To be able to easily access the most dissatisfied member we always keep a reference to this subject
-// at the end of the subjects vector (in the underlying simple group manager)
+// at the end of the subjects vector (in the underlying simple group registry)
 #[derive(Debug)]
-pub(super) struct ProposalHandlingGroupManager<'a, S, G>
+pub(super) struct ProposalHandlingGroupRegistry<'a, S, G>
 where
     S: Subject,
     G: Group,
 {
-    delegate: SimpleGroupManager<'a, S, G>,
+    delegate: SimpleGroupRegistry<'a, S, G>,
     highest_dissatisfaction: i32,
 }
 
-impl<'a, S: Subject, G: Group> GrowingGroupManager<'a, S>
-    for ProposalHandlingGroupManager<'a, S, G>
+impl<'a, S: Subject, G: Group> GrowingGroupRegistry<'a, S>
+    for ProposalHandlingGroupRegistry<'a, S, G>
 {
-    fn add_subject(&mut self, subject: &'a S) -> Result<(), CapacityError> {
+    fn register_subject(&mut self, subject: &'a S) -> Result<(), CapacityError> {
         if self.full() {
             Err(CapacityError {})
         } else {
@@ -40,7 +40,6 @@ impl<'a, S: Subject, G: Group> GrowingGroupManager<'a, S>
                 .iter()
                 .rposition(|x| x.dissatisfaction(&id) <= new_member_dissatisfaction_rating)
             {
-                //print!("\r\n Position is : {:?} \r\n", position);
                 self.delegate.subjects.insert(position, subject);
             } else {
                 print!(
@@ -60,7 +59,7 @@ impl<'a, S: Subject, G: Group> GrowingGroupManager<'a, S>
     }
 }
 
-impl<'a, S: Subject, G: Group> Group for ProposalHandlingGroupManager<'a, S, G> {
+impl<'a, S: Subject, G: Group> Group for ProposalHandlingGroupRegistry<'a, S, G> {
     fn id(&self) -> u64 {
         self.delegate.id()
     }
@@ -70,7 +69,7 @@ impl<'a, S: Subject, G: Group> Group for ProposalHandlingGroupManager<'a, S, G> 
     }
 }
 
-impl<'a, S: Subject, G: Group> GroupManager for ProposalHandlingGroupManager<'a, S, G> {
+impl<'a, S: Subject, G: Group> GroupRegistry for ProposalHandlingGroupRegistry<'a, S, G> {
     fn full(&self) -> bool {
         self.delegate.full()
     }
@@ -82,13 +81,9 @@ impl<'a, S: Subject, G: Group> GroupManager for ProposalHandlingGroupManager<'a,
     }
 }
 
-impl<'a, S: Subject, G: Group> ProposalHandlingGroupManager<'a, S, G> {
-    pub(super) fn highest_dissatisfaction(&self) -> i32 {
-        self.highest_dissatisfaction
-    }
-
+impl<'a, S: Subject, G: Group> ProposalHandlingGroupRegistry<'a, S, G> {
     pub(super) fn new_without_dissatisfaction(group: &'a G, subjects: Vec<&'a S>) -> Self {
-        let delegate = SimpleGroupManager::new(group, subjects);
+        let delegate = SimpleGroupRegistry::new(group, subjects);
         Self {
             delegate,
             highest_dissatisfaction: 0 as i32,
@@ -142,30 +137,30 @@ impl<'a, S: Subject, G: Group> ProposalHandlingGroupManager<'a, S, G> {
         }
     }
 
-    // removes the least happy member from the group manager and adds another member.
+    // removes the least happy member from the group registry and adds another member.
     // The removed member is returned.
     fn replace_least_happy_member(&mut self, subject: &'a S) -> &'a S {
         let least_happy_member = self.delegate.subjects.pop().unwrap(); // The last entry is always least happy with this group
-        self.add_subject(subject);
+        self.register_subject(subject).unwrap();
         least_happy_member
     }
 
-    // Removes a member from this group manager and adds it to another under the conditions of a transferral offer.
-    // If the other group manager is at full capacity its least happy member will be removed
+    // Removes a member from this group registry and adds it to another under the conditions of a transferral offer.
+    // If the other group registry is at full capacity its least happy member will be removed
     pub(super) fn transfer(&mut self, other: &mut Self, offer: TransferralOffer) -> Option<&'a S> {
         let subject_to_be_transferred = self.delegate.subjects.remove(offer.subject_lookup_key);
         let mut replaced_subject = None;
         if offer.replace_least_happy_member_upon_transferral() {
             replaced_subject = Some(other.replace_least_happy_member(subject_to_be_transferred));
         } else {
-            other.add_subject(subject_to_be_transferred);
+            other.register_subject(subject_to_be_transferred).unwrap();
         }
         replaced_subject
     }
     // Adds a member without taking capacity limitations into consideration
     // This method is typically used to return members to the group of their first choice after being replaced by
     // some other member in their previously assigned group.
-    pub(super) fn force_add_subject(&mut self, subject: &'a S) -> () {
+    pub(super) fn force_register_subject(&mut self, subject: &'a S) -> () {
         let id = self.id();
         if let Some(position) = self
             .delegate
@@ -183,12 +178,10 @@ impl<'a, S: Subject, G: Group> ProposalHandlingGroupManager<'a, S, G> {
 mod tests {
     use super::*;
     use crate::groups::test_utils::TestGroup;
-    use crate::{
-        groups,
-        subjects::{self, test_utils::TestSubject},
-    };
+    use crate::subjects::test_utils::TestSubject;
+
     /// Practical method to have when we want to ensure a certain state when testing
-    impl<'a, S: Subject, T: Group> ProposalHandlingGroupManager<'a, S, T> {
+    impl<'a, S: Subject, T: Group> ProposalHandlingGroupRegistry<'a, S, T> {
         fn new(group: &'a T, subjects: Vec<&'a S>) -> Self {
             let id = group.id();
             let highest_dissatisfaction = subjects
@@ -196,7 +189,7 @@ mod tests {
                 .map(|x| x.dissatisfaction(&id))
                 .max()
                 .unwrap_or(0);
-            let delegate = SimpleGroupManager::new(group, subjects);
+            let delegate = SimpleGroupRegistry::new(group, subjects);
             Self {
                 delegate,
                 highest_dissatisfaction,
@@ -222,12 +215,12 @@ mod tests {
             TestSubject::new(third_subject_id, vec![second_group_id, first_group_id]);
         // Groups
         let first_group = TestGroup::new(first_group_id, 3);
-        let first_group_proxy =
-            ProposalHandlingGroupManager::new(&first_group, vec![&first_subject, &second_subject]);
+        let first_group_registry =
+            ProposalHandlingGroupRegistry::new(&first_group, vec![&first_subject, &second_subject]);
         let second_group = TestGroup::new(second_group_id, 1);
-        let second_group_proxy =
-            ProposalHandlingGroupManager::new(&second_group, vec![&third_subject]);
-        let offer = first_group_proxy.propose_transferral(&second_group_proxy);
+        let second_group_registry =
+            ProposalHandlingGroupRegistry::new(&second_group, vec![&third_subject]);
+        let offer = first_group_registry.propose_transferral(&second_group_registry);
         assert!(offer.is_none());
     }
 
@@ -252,12 +245,12 @@ mod tests {
             TestSubject::new(fourth_subject_id, vec![first_group_id, second_group_id]);
         // Groups
         let first_group = TestGroup::new(first_group_id, 2);
-        let first_group_proxy =
-            ProposalHandlingGroupManager::new(&first_group, vec![&first_subject, &second_subject]);
+        let first_group_registry =
+            ProposalHandlingGroupRegistry::new(&first_group, vec![&first_subject, &second_subject]);
         let second_group = TestGroup::new(second_group_id, 2);
-        let second_group_proxy =
-            ProposalHandlingGroupManager::new(&second_group, vec![&third_subject, &fourth_subject]);
-        let actual_offer = second_group_proxy.propose_transferral(&first_group_proxy);
+        let second_group_registry =
+            ProposalHandlingGroupRegistry::new(&second_group, vec![&third_subject, &fourth_subject]);
+        let actual_offer = second_group_registry.propose_transferral(&first_group_registry);
         let expected_offer = TransferralOffer::new(1, MembershipOffer::new(0, Some(-1)));
         assert_eq!(actual_offer.unwrap(), expected_offer);
     }
@@ -283,12 +276,12 @@ mod tests {
             TestSubject::new(fourth_subject_id, vec![second_group_id, first_group_id]);
         // Groups
         let first_group = TestGroup::new(first_group_id, 3);
-        let first_group_manager =
-            ProposalHandlingGroupManager::new(&first_group, vec![&first_subject, &second_subject]);
+        let first_group_registry =
+            ProposalHandlingGroupRegistry::new(&first_group, vec![&first_subject, &second_subject]);
         let second_group = TestGroup::new(second_group_id, 1);
-        let second_group_manager =
-            ProposalHandlingGroupManager::new(&second_group, vec![&third_subject, &fourth_subject]);
-        let offer = second_group_manager.propose_transferral(&first_group_manager);
+        let second_group_registry =
+            ProposalHandlingGroupRegistry::new(&second_group, vec![&third_subject, &fourth_subject]);
+        let offer = second_group_registry.propose_transferral(&first_group_registry);
         let expected_offer = TransferralOffer::new(1, MembershipOffer::new(1, None));
         assert_eq!(offer.unwrap(), expected_offer);
     }
@@ -311,9 +304,9 @@ mod tests {
             TestSubject::new(third_subject_id, vec![first_group_id, second_group_id]);
         // Group(s)
         let first_group = TestGroup::new(first_group_id, 3);
-        let first_group_manager =
-            ProposalHandlingGroupManager::new(&first_group, vec![&first_subject, &second_subject]);
-        let actual_offer = first_group_manager
+        let first_group_registry =
+            ProposalHandlingGroupRegistry::new(&first_group, vec![&first_subject, &second_subject]);
+        let actual_offer = first_group_registry
             .handle_membership_proposal(&third_subject)
             .unwrap();
         let offer = MembershipOffer::new(0, None);
@@ -338,16 +331,16 @@ mod tests {
             TestSubject::new(third_subject_id, vec![second_group_id, first_group_id]);
         // Group(s)
         let first_group = TestGroup::new(first_group_id, 1);
-        let first_group_proxy =
-            ProposalHandlingGroupManager::new(&first_group, vec![&first_subject]);
+        let first_group_registry =
+            ProposalHandlingGroupRegistry::new(&first_group, vec![&first_subject]);
         // The second subject wants to be in the first group more than the first so an offer is given
-        let actual_offer = first_group_proxy
+        let actual_offer = first_group_registry
             .handle_membership_proposal(&second_subject)
             .unwrap();
         let expected_offer = MembershipOffer::new(0, Some(-1));
         assert_eq!(expected_offer, actual_offer);
         // The third subject does not want to be in the first group more than the first thus no offer is given
-        let no_offer = first_group_proxy
+        let no_offer = first_group_registry
             .handle_membership_proposal(&third_subject)
             .is_none();
         assert!(no_offer);

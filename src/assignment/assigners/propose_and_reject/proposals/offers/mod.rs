@@ -1,3 +1,4 @@
+// Helper module offering functionality assisting proposal handling registries in proposing transferral of subjects.
 use std::cmp::Eq;
 use std::cmp::Ord;
 use std::cmp::Ordering;
@@ -5,7 +6,7 @@ use std::cmp::PartialOrd;
 
 #[derive(Eq, Debug)]
 /// An offer provided after a subject proposes to be a member of a given group.
-pub struct MembershipOffer {
+pub(in crate::assignment::assigners::propose_and_reject) struct MembershipOffer {
     // How dissatisfied the Subject is with the proposed group. Needs to be recorded
     // in order for membership offers to be compared.
     dissatisfaction_rating: i32,
@@ -15,7 +16,7 @@ pub struct MembershipOffer {
 }
 
 impl MembershipOffer {
-    pub fn new(
+    pub(in crate::assignment::assigners::propose_and_reject) fn new(
         dissatisfaction_rating: i32,
         dissatisfaction_improvement: Option<i32>, // if a value is provided it must be negative
     ) -> MembershipOffer {
@@ -59,13 +60,16 @@ impl PartialEq for MembershipOffer {
 }
 
 #[derive(Eq, Debug)]
-pub struct TransferralOffer {
+pub(in crate::assignment::assigners::propose_and_reject) struct TransferralOffer {
     pub subject_lookup_key: usize,
     membership_offer: MembershipOffer,
 }
 
 impl TransferralOffer {
-    pub fn new(subject_lookup_key: usize, membership_offer: MembershipOffer) -> TransferralOffer {
+    pub(in crate::assignment::assigners::propose_and_reject) fn new(
+        subject_lookup_key: usize,
+        membership_offer: MembershipOffer,
+    ) -> TransferralOffer {
         TransferralOffer {
             subject_lookup_key,
             membership_offer,
@@ -74,10 +78,6 @@ impl TransferralOffer {
 
     pub fn replace_least_happy_member_upon_transferral(&self) -> bool {
         self.membership_offer.dissatisfaction_improvement.is_some()
-    }
-
-    pub fn dissatisfaction_rating(&self) -> i32 {
-        self.membership_offer.dissatisfaction_rating
     }
 }
 
