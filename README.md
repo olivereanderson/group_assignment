@@ -1,6 +1,6 @@
 **group_assignment: A simple library crate for preference based group assignments**
 
-group_assignment is available under the MIT license. 
+group_assignment is available under either the Apache-2.0 or the MIT license. 
 
 # A simple example: 
 ```rust
