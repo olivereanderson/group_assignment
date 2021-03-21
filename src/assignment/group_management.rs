@@ -2,6 +2,8 @@ use crate::assignment::errors::CapacityError;
 use crate::groups::Group;
 use crate::subjects::Subject;
 use std::collections::HashMap;
+
+use super::Assignment;
 /// Trait for group membership management.
 /// The assigners in this library will typically use types implementing this trait.
 pub(super) trait GroupRegistry: Group {
@@ -20,7 +22,7 @@ pub(super) trait GroupRegistry: Group {
 /// The second mapping takes an id of a group and returns a vector of the ids of the subjects assigned to this group.
 pub(super) fn assign_from_group_registries<M: GroupRegistry>(
     mut group_registries: Vec<M>,
-) -> (HashMap<u64, u64>, HashMap<u64, Vec<u64>>) {
+) -> Assignment {
     let (init_subjects_mapper, init_groups_mapper): (HashMap<u64, u64>, HashMap<u64, Vec<u64>>) =
         group_registries
             .pop()
@@ -39,13 +41,13 @@ pub(super) fn assign_from_group_registries<M: GroupRegistry>(
             acc
         });
 
-    (
+    Assignment::from((
         subject_identifiers_to_group_identifiers,
         group_identifiers_to_subject_identifiers,
-    )
+    ))
 }
 
-/// Group registries with the ability to register new members 
+/// Group registries with the ability to register new members
 pub(super) trait GrowingGroupRegistry<'a, S>: GroupRegistry {
     fn register_subject(&mut self, subject: &'a S) -> Result<(), CapacityError>;
 }

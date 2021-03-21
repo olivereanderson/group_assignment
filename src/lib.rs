@@ -72,16 +72,16 @@
 //!    Student::new(student_ids[2], "Mihaela".to_string(), prefer_early_class.clone()),
 //!    Student::new(student_ids[3], "Ellinor".to_string(), prefer_early_class)    
 //!];
-//!let (student_ids_to_group_ids, group_ids_to_students_ids) =
+//!let assignment =
 //!    FirstComeFirstServed::assign(&students, &groups).unwrap();
 //First student should be assigned to their first choice.
-//!assert_eq!(grp_id_by_description["Early class"],student_ids_to_group_ids[&student_ids[0]]);
+//!assert_eq!(&grp_id_by_description["Early class"],assignment.subject_to_group_id(&students[0]).unwrap());
 //! //Now assert that the afternoon class consists of the second and fourth student
 //!assert!(
-//!    group_ids_to_students_ids[&grp_id_by_description["Afternoon class"]].contains(&student_ids[1])
+//!    assignment.group_to_subjects_ids(&groups[1]).unwrap().contains(&student_ids[1])
 //!);  
 //!assert!(
-//!    group_ids_to_students_ids[&grp_id_by_description["Afternoon class"]].contains(&student_ids[3])
+//!    assignment.group_to_subjects_ids(&groups[1]).unwrap().contains(&student_ids[3])
 //!);
 //! ```
 //!
@@ -89,7 +89,8 @@ mod assignment;
 mod groups;
 mod subjects;
 
-pub use assignment::assigners; 
+pub use assignment::assigners;
 pub use assignment::errors;
+pub use assignment::Assignment;
 pub use groups::Group;
 pub use subjects::Subject;

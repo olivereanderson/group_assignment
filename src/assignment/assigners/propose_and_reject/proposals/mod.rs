@@ -248,8 +248,10 @@ mod tests {
         let first_group_registry =
             ProposalHandlingGroupRegistry::new(&first_group, vec![&first_subject, &second_subject]);
         let second_group = TestGroup::new(second_group_id, 2);
-        let second_group_registry =
-            ProposalHandlingGroupRegistry::new(&second_group, vec![&third_subject, &fourth_subject]);
+        let second_group_registry = ProposalHandlingGroupRegistry::new(
+            &second_group,
+            vec![&third_subject, &fourth_subject],
+        );
         let actual_offer = second_group_registry.propose_transferral(&first_group_registry);
         let expected_offer = TransferralOffer::new(1, MembershipOffer::new(0, Some(-1)));
         assert_eq!(actual_offer.unwrap(), expected_offer);
@@ -279,8 +281,10 @@ mod tests {
         let first_group_registry =
             ProposalHandlingGroupRegistry::new(&first_group, vec![&first_subject, &second_subject]);
         let second_group = TestGroup::new(second_group_id, 1);
-        let second_group_registry =
-            ProposalHandlingGroupRegistry::new(&second_group, vec![&third_subject, &fourth_subject]);
+        let second_group_registry = ProposalHandlingGroupRegistry::new(
+            &second_group,
+            vec![&third_subject, &fourth_subject],
+        );
         let offer = second_group_registry.propose_transferral(&first_group_registry);
         let expected_offer = TransferralOffer::new(1, MembershipOffer::new(1, None));
         assert_eq!(offer.unwrap(), expected_offer);

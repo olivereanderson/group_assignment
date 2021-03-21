@@ -1,14 +1,14 @@
 //! # Propose and reject
 //! This module provides an [assigner](crate::assignment::assigners::Assigner) inspired by the Gale-Shapley algorithm (also known as the propose-and-reject algorithm).
 //!
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
 use super::Assigner;
 use super::GroupRegistry;
 use super::TotalCapacityError;
 mod proposals;
-use crate::groups::Group;
 use crate::subjects::Subject;
+use crate::{assignment::Assignment, groups::Group};
 
 use proposals::ProposalHandlingGroupRegistry;
 /// Assigns in a manner inspired by the Gale-Shapley algorithm.
@@ -20,16 +20,15 @@ use proposals::ProposalHandlingGroupRegistry;
 ///
 /// A group that is proposed to will say "no" if it is full and all its current members are at least equally satisfied with their assignment compared to the subject
 /// it is proposed to accept. Otherwise the group can accept the new subject, but if the proposed group is already at full capacity, it must first discard its most dissatisfied member
-/// and return it to the group according to the discarded member's first choice regardless of capacity constraints. 
-/// This propose and reject/accept process continues until there are no more overfull groups. 
+/// and return it to the group according to the discarded member's first choice regardless of capacity constraints.
+/// This propose and reject/accept process continues until there are no more overfull groups.
 pub struct ProposeAndReject {}
 
 impl Assigner for ProposeAndReject {
-  
     fn assign<S: Subject, G: Group>(
         subjects: &[S],
         groups: &[G],
-    ) -> Result<(HashMap<u64, u64>, HashMap<u64, Vec<u64>>), TotalCapacityError> {
+    ) -> Result<Assignment, TotalCapacityError> {
         Self::sufficient_capacity(subjects, groups)?;
         let group_registries = first_step(subjects, groups);
         // Partition the managers into those whose corresponding groups will be overfull, full, and available respectively
@@ -116,7 +115,8 @@ fn handle_subjects_without_first_choice_first_step<'a, S: Subject, G: Group>(
         .iter()
         .map(|i| subjects.get(*i).unwrap())
     {
-        group_registries = super::subject_to_best_available_group_registry(subject, group_registries);
+        group_registries =
+            super::subject_to_best_available_group_registry(subject, group_registries);
     }
 
     group_registries
@@ -171,12 +171,15 @@ fn group_registries_for_next_proposal_round<'a, S: Subject, G: Group>(
     let mut registries_for_update: Vec<ProposalHandlingGroupRegistry<'a, S, G>> =
         overfull.into_iter().chain(bystanders.into_iter()).collect();
     for subject in subjects_for_reprocessing {
-        registries_for_update = subject_to_most_desired_group_registry(registries_for_update, subject);
+        registries_for_update =
+            subject_to_most_desired_group_registry(registries_for_update, subject);
     }
     let (overfull, bystanders): (
         Vec<ProposalHandlingGroupRegistry<'a, S, G>>,
         Vec<ProposalHandlingGroupRegistry<'a, S, G>>,
-    ) = registries_for_update.into_iter().partition(|x| x.overfull());
+    ) = registries_for_update
+        .into_iter()
+        .partition(|x| x.overfull());
     (overfull, bystanders, available)
 }
 
@@ -200,6 +203,7 @@ mod tests {
     use super::*;
     use crate::groups::test_utils::TestGroup;
     use crate::subjects::test_utils::TestSubject;
+    use std::collections::HashMap;
 
     #[test]
     fn assign() {
@@ -251,8 +255,10 @@ mod tests {
             .map(|id| TestGroup::new(*id, capacities[id]))
             .collect();
 
-        let (subject_ids_to_group_ids, group_ids_to_subjects_ids) =
-            ProposeAndReject::assign(&subjects, &groups).unwrap();
+        let (subject_ids_to_group_ids, group_ids_to_subjects_ids): (
+            HashMap<u64, u64>,
+            HashMap<u64, Vec<u64>>,
+        ) = ProposeAndReject::assign(&subjects, &groups).unwrap().into();
         assert_eq!(group_ids_to_subjects_ids[&group_ids[4]].len(), 2); // Only two subjects should be assigned to the least desired gorup despite its capacity being 3
         let total_dissatisfaction: i32 = subjects
             .iter()
@@ -287,8 +293,10 @@ mod tests {
             .iter()
             .map(|id| TestGroup::new(*id, capacities[id]))
             .collect();
-        let (subject_ids_to_group_ids, group_ids_to_subjects_ids) =
-            ProposeAndReject::assign(&subjects, &groups).unwrap();
+        let (subject_ids_to_group_ids, group_ids_to_subjects_ids): (
+            HashMap<u64, u64>,
+            HashMap<u64, Vec<u64>>,
+        ) = ProposeAndReject::assign(&subjects, &groups).unwrap().into();
 
         let number_of_assigned_subjects: i32 = groups
             .iter()
@@ -317,8 +325,10 @@ mod tests {
             TestGroup::new(group_ids[1], 1),
         ];
         // Check that the first subject is assigned to the second group
-        let (subject_ids_to_group_ids, group_ids_to_subject_ids) =
-            ProposeAndReject::assign(&subjects, &groups).unwrap();
+        let (subject_ids_to_group_ids, group_ids_to_subject_ids): (
+            HashMap<u64, u64>,
+            HashMap<u64, Vec<u64>>,
+        ) = ProposeAndReject::assign(&subjects, &groups).unwrap().into();
         assert_eq!(group_ids[1], subject_ids_to_group_ids[&subject_ids[0]]);
         assert!(group_ids_to_subject_ids[&group_ids[1]].contains(&subject_ids[0]));
         // Check that the second subject is mapped to the first group
@@ -337,8 +347,10 @@ mod tests {
         let group = TestGroup::new(group_id, 1);
         let subjects = [subject];
         let groups = [group];
-        let (subject_ids_to_group_ids, group_ids_to_subject_ids) =
-            ProposeAndReject::assign(&subjects, &groups).unwrap();
+        let (subject_ids_to_group_ids, group_ids_to_subject_ids): (
+            HashMap<u64, u64>,
+            HashMap<u64, Vec<u64>>,
+        ) = ProposeAndReject::assign(&subjects, &groups).unwrap().into();
         assert_eq!(group_id, subject_ids_to_group_ids[&subject_id]);
         assert!(group_ids_to_subject_ids[&group_id].contains(&subject_id));
     }
@@ -374,8 +386,10 @@ mod tests {
         let first_group = TestGroup::new(first_group_id, 1);
         let second_group = TestGroup::new(second_group_id, 1);
         let groups = [first_group, second_group];
-        let (_subject_ids_to_group_ids, group_ids_to_subjects_ids) =
-            ProposeAndReject::assign(&subjects, &groups).unwrap();
+        let (_subject_ids_to_group_ids, group_ids_to_subjects_ids): (
+            HashMap<u64, u64>,
+            HashMap<u64, Vec<u64>>,
+        ) = ProposeAndReject::assign(&subjects, &groups).unwrap().into();
         assert_eq!(1, group_ids_to_subjects_ids[&first_group_id].len() as i32);
         assert_eq!(1, group_ids_to_subjects_ids[&second_group_id].len() as i32);
     }
