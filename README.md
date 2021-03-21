@@ -1,7 +1,7 @@
 **group_assignment: A simple library crate for preference based group assignments**
 
-To assign members to your groups, all that needs to be done is to implement the [Subject](blob/master/src/subjects/mod.rs#L5) and the [Group](blob/master/src/groups/mod.rs#L5) traits
-for the member and group types respectively. Then an [Assigner](blob/master/src/assignment/assigners/mod.rs#L24) can provide group assignments. We have thus far implemented two such assingers:  [ProposeAndReject](blob/master/src/assignment/assigners/propose_and_reject/mod.rs#L21) (inspired by the Gale-Shapley algorithm), and the simpler [FirstComeFirstServed](blob/master/src/assignment/assigners/first_come_first_served/mod.rs#L11).
+To assign members to your groups, all that needs to be done is to implement the [Subject](src/subjects/mod.rs#L5) and the [Group](src/groups/mod.rs#L5) traits
+for the member and group types respectively. Then an [Assigner](src/assignment/assigners/mod.rs#L24) can provide group assignments. We have thus far implemented two such assingers:  [ProposeAndReject](src/assignment/assigners/propose_and_reject/mod.rs#L21) (inspired by the Gale-Shapley algorithm), and the simpler [FirstComeFirstServed](src/assignment/assigners/first_come_first_served/mod.rs#L11).
 # License
 group_assignment is available under either the Apache-2.0 or the MIT license. 
 
