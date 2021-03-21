@@ -25,14 +25,14 @@ pub trait Assigner {
     /// Assign the given subjects to the given groups
     /// When the total capacity of the groups is sufficient a pair of maps (subject ids -> group ids, group ids -> subject ids) is returned
     fn assign<S: Subject, G: Group>(
-        subjects: &Vec<S>,
-        groups: &Vec<G>,
+        subjects: &[S],
+        groups: &[G],
     ) -> Result<(HashMap<u64, u64>, HashMap<u64, Vec<u64>>), TotalCapacityError>;
 
     /// This method must be called by assign and in the case of an error it must be forwarded.
     fn sufficient_capacity<S: Subject, G: Group>(
-        subjects: &Vec<S>,
-        groups: &Vec<G>,
+        subjects: &[S],
+        groups: &[G],
     ) -> Result<(), TotalCapacityError> {
         let capacity: i32 = groups.iter().map(|x| x.capacity()).sum();
         if capacity >= (subjects.len() as i32) {

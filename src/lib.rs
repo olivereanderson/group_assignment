@@ -53,7 +53,7 @@
 //!    ("Afternoon class".to_string(), 102)
 //!].iter().cloned().collect();
 //!
-//!let groups = vec![
+//!let groups = [
 //!    GermanClass::new(grp_id_by_description["Early class"], "Early class".to_string(),2),
 //!    GermanClass::new(grp_id_by_description["Afternoon class"], "Afternoon class".to_string(), 2)
 //!];
@@ -66,7 +66,7 @@
 //!].iter().cloned().collect();
 //!
 //!let student_ids = [1_u64,2,3,4];
-//!let students = vec![
+//!let students = [
 //!    Student::new(student_ids[0], "Pansela".to_string(), prefer_early_class.clone()),
 //!    Student::new(student_ids[1], "Kjetil".to_string(), prefer_late_class),
 //!    Student::new(student_ids[2], "Mihaela".to_string(), prefer_early_class.clone()),

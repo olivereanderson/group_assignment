@@ -23,8 +23,8 @@ pub struct ProposeAndReject {}
 impl Assigner for ProposeAndReject {
   
     fn assign<S: Subject, G: Group>(
-        subjects: &Vec<S>,
-        groups: &Vec<G>,
+        subjects: &[S],
+        groups: &[G],
     ) -> Result<(HashMap<u64, u64>, HashMap<u64, Vec<u64>>), TotalCapacityError> {
         Self::sufficient_capacity(subjects, groups)?;
         let group_registries = first_step(subjects, groups);
@@ -56,8 +56,8 @@ impl Assigner for ProposeAndReject {
 // Create a group manager for each group and register every subject to a group manager corresponding to the subjects preferred choice.
 // In the most general case where a subject might have more than one group with dissatisfaction rating 0, the first one appearing in the groups vector is chosen.
 fn first_step<'a, S: Subject, G: Group>(
-    subjects: &'a Vec<S>,
-    groups: &'a Vec<G>,
+    subjects: &'a [S],
+    groups: &'a [G],
 ) -> Vec<ProposalHandlingGroupRegistry<'a, S, G>> {
     let mut group_registries: Vec<_> = Vec::new();
     let mut unprocessed_subjects_indices: HashSet<usize> =
@@ -104,7 +104,7 @@ fn first_step<'a, S: Subject, G: Group>(
 }
 
 fn handle_subjects_without_first_choice_first_step<'a, S: Subject, G: Group>(
-    subjects: &'a Vec<S>,
+    subjects: &'a [S],
     unprocessed_subject_indices: HashSet<usize>,
     mut group_registries: Vec<ProposalHandlingGroupRegistry<'a, S, G>>,
 ) -> Vec<ProposalHandlingGroupRegistry<'a, S, G>> {
@@ -199,8 +199,8 @@ mod tests {
 
     #[test]
     fn assign() {
-        let subject_ids = vec![1_u64, 2, 3, 4, 5, 6, 7, 8];
-        let group_ids = vec![101_u64, 102, 103, 104, 105];
+        let subject_ids = [1_u64, 2, 3, 4, 5, 6, 7, 8];
+        let group_ids = [101_u64, 102, 103, 104, 105];
         let preferences1 = vec![
             group_ids[0],
             group_ids[1],
@@ -222,7 +222,7 @@ mod tests {
             group_ids[1],
             group_ids[0],
         ];
-        let subjects = vec![
+        let subjects = [
             TestSubject::new(subject_ids[0], preferences1.clone()),
             TestSubject::new(subject_ids[1], preferences1.clone()),
             TestSubject::new(subject_ids[2], preferences1.clone()),
@@ -303,12 +303,12 @@ mod tests {
     fn assign_complete_after_first_step() {
         let subject_ids = [1_u64, 2, 3];
         let group_ids = [101_u64, 102];
-        let subjects = vec![
+        let subjects = [
             TestSubject::new(subject_ids[0], vec![group_ids[1]]),
             TestSubject::new(subject_ids[1], vec![group_ids[0], group_ids[1]]),
             TestSubject::new(subject_ids[2], vec![group_ids[0]]),
         ];
-        let groups = vec![
+        let groups = [
             TestGroup::new(group_ids[0], 3),
             TestGroup::new(group_ids[1], 1),
         ];
@@ -331,8 +331,8 @@ mod tests {
         let group_id = 101 as u64;
         let subject = TestSubject::new(subject_id, vec![group_id]);
         let group = TestGroup::new(group_id, 1);
-        let subjects = vec![subject];
-        let groups = vec![group];
+        let subjects = [subject];
+        let groups = [group];
         let (subject_ids_to_group_ids, group_ids_to_subject_ids) =
             ProposeAndReject::assign(&subjects, &groups).unwrap();
         assert_eq!(group_id, subject_ids_to_group_ids[&subject_id]);
@@ -362,14 +362,14 @@ mod tests {
 
         let first_subject = TestSubjectWithoutFirstChoice::new(first_subject_id);
         let second_subject = TestSubjectWithoutFirstChoice::new(second_subject_id);
-        let subjects = vec![first_subject, second_subject];
+        let subjects = [first_subject, second_subject];
 
         let first_group_id = 101 as u64;
         let second_group_id = 102 as u64;
 
         let first_group = TestGroup::new(first_group_id, 1);
         let second_group = TestGroup::new(second_group_id, 1);
-        let groups = vec![first_group, second_group];
+        let groups = [first_group, second_group];
         let (_subject_ids_to_group_ids, group_ids_to_subjects_ids) =
             ProposeAndReject::assign(&subjects, &groups).unwrap();
         assert_eq!(1, group_ids_to_subjects_ids[&first_group_id].len() as i32);
