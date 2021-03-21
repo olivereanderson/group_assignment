@@ -12,21 +12,27 @@ use crate::subjects::Subject;
 
 use proposals::ProposalHandlingGroupRegistry;
 /// Assigns in a manner inspired by the Gale-Shapley algorithm.
-/// See [the propose and reject algorithm in detail](crate::assignment::assigners#the-propose-and-reject-algorithm-in-detail) for a precise explanation of the assignment algorithm.
+/// More precisely the following assignment algorithm is applied: First all subjects are assigned to the group of their first choice (or more generally of lowest possible dissatisfaction rating).
+/// Then if some groups become overfull as a result of this assignment, the overfull groups propose in turn to the remaining groups to accept one of their subjects.
+/// A group that is proposed to will say "no" if it is full and all its current members are at least equally satisfied with their assignment compared to the subject
+/// it is proposed to accept. Otherwise the group can accept the new subject, but if the proposed group is already at full capacity, it must first discard its most dissatisfied member
+/// and return it to the group according to the discarded member's first choice regardless of capacity conctraints. This propose and reject/accept process continues until there are no
+/// more overfull groups. 
 pub struct ProposeAndReject {}
 
 impl Assigner for ProposeAndReject {
+  
     fn assign<S: Subject, G: Group>(
         subjects: &Vec<S>,
         groups: &Vec<G>,
     ) -> Result<(HashMap<u64, u64>, HashMap<u64, Vec<u64>>), TotalCapacityError> {
         Self::sufficient_capacity(subjects, groups)?;
-        let group_managers = first_step(subjects, groups);
+        let group_registries = first_step(subjects, groups);
         // Partition the managers into those whose corresponding groups will be overfull, full, and available respectively
         let (full, mut available): (
             Vec<ProposalHandlingGroupRegistry<S, G>>,
             Vec<ProposalHandlingGroupRegistry<S, G>>,
-        ) = group_managers.into_iter().partition(|x| x.full());
+        ) = group_registries.into_iter().partition(|x| x.full());
         let (mut overfull, mut bystanders): (
             Vec<ProposalHandlingGroupRegistry<S, G>>,
             Vec<ProposalHandlingGroupRegistry<S, G>>,
@@ -39,10 +45,10 @@ impl Assigner for ProposeAndReject {
             bystanders = next_bystanders;
             available = next_available;
         }
-        let resolved_managers: Vec<ProposalHandlingGroupRegistry<S, G>> =
+        let resolved_registries: Vec<ProposalHandlingGroupRegistry<S, G>> =
             available.into_iter().chain(bystanders).collect();
 
-        Ok(super::assign_from_group_registries(resolved_managers))
+        Ok(super::assign_from_group_registries(resolved_registries))
     }
 }
 
