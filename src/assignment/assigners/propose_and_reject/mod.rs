@@ -12,12 +12,16 @@ use crate::subjects::Subject;
 
 use proposals::ProposalHandlingGroupRegistry;
 /// Assigns in a manner inspired by the Gale-Shapley algorithm.
-/// More precisely the following assignment algorithm is applied: First all subjects are assigned to the group of their first choice (or more generally of lowest possible dissatisfaction rating).
+///
+///
+/// First all subjects are assigned to the group of their first choice (or more generally of lowest possible dissatisfaction rating).
 /// Then if some groups become overfull as a result of this assignment, the overfull groups propose in turn to the remaining groups to accept one of their subjects.
+///
+///
 /// A group that is proposed to will say "no" if it is full and all its current members are at least equally satisfied with their assignment compared to the subject
 /// it is proposed to accept. Otherwise the group can accept the new subject, but if the proposed group is already at full capacity, it must first discard its most dissatisfied member
-/// and return it to the group according to the discarded member's first choice regardless of capacity conctraints. This propose and reject/accept process continues until there are no
-/// more overfull groups. 
+/// and return it to the group according to the discarded member's first choice regardless of capacity constraints. 
+/// This propose and reject/accept process continues until there are no more overfull groups. 
 pub struct ProposeAndReject {}
 
 impl Assigner for ProposeAndReject {
