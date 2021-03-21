@@ -2,7 +2,7 @@
 //!
 //! To assign members to your groups, all that needs to be done is to implement the [Subject](crate::subjects::Subject) and the [Group](crate::groups::Group) traits
 //! for the member and group types respectively. Then an [Assigner](crate::assignment::assigners::Assigner) can provide group assignments. We have thus far implemented
-//! two such assingers: [ProposeAndReject](crate::assignment::assigners::ProposeAndReject) (inspired by the Gale-Shapley algorithm), and the simpler [FirstComeFirstServed](crate::assignment::assigners::FirstComeFirstServed) .
+//! two such assingers: [ProposeAndReject](crate::assignment::assigners::ProposeAndReject) (inspired by the Gale-Shapley algorithm), and the simpler [FirstComeFirstServed](crate::assignment::assigners::FirstComeFirstServed).
 //!
 //!
 //! # A simple example
