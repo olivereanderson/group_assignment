@@ -48,7 +48,7 @@ fn subjects_to_best_available_group_registry_by_the_first_come_first_served_prin
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::groups::test_utils::TestGroup;
+    use crate::groups::DefaultGroup;
     use crate::subjects::test_utils::TestSubject;
     use std::collections::HashMap;
     #[test]
@@ -62,9 +62,9 @@ mod tests {
             TestSubject::new(subject_ids[3], vec![group_ids[1]]),
         ];
         let groups = vec![
-            TestGroup::new(group_ids[0], 2),
-            TestGroup::new(group_ids[1], 1),
-            TestGroup::new(group_ids[2], 3),
+            DefaultGroup::new(group_ids[0], 2),
+            DefaultGroup::new(group_ids[1], 1),
+            DefaultGroup::new(group_ids[2], 3),
         ];
 
         let (subject_identifiers_to_group_identifiers, group_identifiers_to_subjects_identifiers) : (HashMap<u64,u64>, HashMap<u64,Vec<u64>>) =

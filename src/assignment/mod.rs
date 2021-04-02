@@ -6,7 +6,7 @@ pub mod errors;
 mod group_management;
 
 /// Describes relationships between subjects and groups
-/// 
+///
 /// Assignments are typically obtained from an [Assigner](assigners::Assigner)
 pub struct Assignment {
     subject_ids_to_group_ids: HashMap<u64, u64>,

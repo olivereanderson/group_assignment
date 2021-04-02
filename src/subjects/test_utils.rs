@@ -1,7 +1,7 @@
 /// Module providing a simple type implementing the Subject trait that can be used in tests.
 use crate::subjects::Subject;
 #[derive(Debug)]
-pub struct TestSubject {
+pub(crate) struct TestSubject {
     id: u64,
     preferences: Vec<u64>,
     assigned_group_id: Option<u64>,

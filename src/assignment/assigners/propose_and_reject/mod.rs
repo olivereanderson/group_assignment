@@ -201,7 +201,7 @@ fn subject_to_most_desired_group_registry<'a, S: Subject, G: Group>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::groups::test_utils::TestGroup;
+    use crate::groups::DefaultGroup;
     use crate::subjects::test_utils::TestSubject;
     use std::collections::HashMap;
 
@@ -250,9 +250,9 @@ mod tests {
         .iter()
         .cloned()
         .collect();
-        let groups: Vec<TestGroup> = group_ids
+        let groups: Vec<DefaultGroup> = group_ids
             .iter()
-            .map(|id| TestGroup::new(*id, capacities[id]))
+            .map(|id| DefaultGroup::new(*id, capacities[id]))
             .collect();
 
         let (subject_ids_to_group_ids, group_ids_to_subjects_ids): (
@@ -289,9 +289,9 @@ mod tests {
             .iter()
             .map(|id| TestSubject::new(*id, preferences[id].clone()))
             .collect();
-        let groups: Vec<TestGroup> = group_ids
+        let groups: Vec<DefaultGroup> = group_ids
             .iter()
-            .map(|id| TestGroup::new(*id, capacities[id]))
+            .map(|id| DefaultGroup::new(*id, capacities[id]))
             .collect();
         let (subject_ids_to_group_ids, group_ids_to_subjects_ids): (
             HashMap<u64, u64>,
@@ -321,8 +321,8 @@ mod tests {
             TestSubject::new(subject_ids[2], vec![group_ids[0]]),
         ];
         let groups = [
-            TestGroup::new(group_ids[0], 3),
-            TestGroup::new(group_ids[1], 1),
+            DefaultGroup::new(group_ids[0], 3),
+            DefaultGroup::new(group_ids[1], 1),
         ];
         // Check that the first subject is assigned to the second group
         let (subject_ids_to_group_ids, group_ids_to_subject_ids): (
@@ -344,7 +344,7 @@ mod tests {
         let subject_id = 1 as u64;
         let group_id = 101 as u64;
         let subject = TestSubject::new(subject_id, vec![group_id]);
-        let group = TestGroup::new(group_id, 1);
+        let group = DefaultGroup::new(group_id, 1);
         let subjects = [subject];
         let groups = [group];
         let (subject_ids_to_group_ids, group_ids_to_subject_ids): (
@@ -383,8 +383,8 @@ mod tests {
         let first_group_id = 101 as u64;
         let second_group_id = 102 as u64;
 
-        let first_group = TestGroup::new(first_group_id, 1);
-        let second_group = TestGroup::new(second_group_id, 1);
+        let first_group = DefaultGroup::new(first_group_id, 1);
+        let second_group = DefaultGroup::new(second_group_id, 1);
         let groups = [first_group, second_group];
         let (_subject_ids_to_group_ids, group_ids_to_subjects_ids): (
             HashMap<u64, u64>,

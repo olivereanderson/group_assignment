@@ -177,7 +177,7 @@ impl<'a, S: Subject, G: Group> ProposalHandlingGroupRegistry<'a, S, G> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::groups::test_utils::TestGroup;
+    use crate::groups::DefaultGroup; 
     use crate::subjects::test_utils::TestSubject;
 
     /// Practical method to have when we want to ensure a certain state when testing
@@ -214,10 +214,10 @@ mod tests {
         let third_subject =
             TestSubject::new(third_subject_id, vec![second_group_id, first_group_id]);
         // Groups
-        let first_group = TestGroup::new(first_group_id, 3);
+        let first_group = DefaultGroup::new(first_group_id, 3);
         let first_group_registry =
             ProposalHandlingGroupRegistry::new(&first_group, vec![&first_subject, &second_subject]);
-        let second_group = TestGroup::new(second_group_id, 1);
+        let second_group = DefaultGroup::new(second_group_id, 1);
         let second_group_registry =
             ProposalHandlingGroupRegistry::new(&second_group, vec![&third_subject]);
         let offer = first_group_registry.propose_transferral(&second_group_registry);
@@ -244,10 +244,10 @@ mod tests {
         let fourth_subject =
             TestSubject::new(fourth_subject_id, vec![first_group_id, second_group_id]);
         // Groups
-        let first_group = TestGroup::new(first_group_id, 2);
+        let first_group = DefaultGroup::new(first_group_id, 2);
         let first_group_registry =
             ProposalHandlingGroupRegistry::new(&first_group, vec![&first_subject, &second_subject]);
-        let second_group = TestGroup::new(second_group_id, 2);
+        let second_group = DefaultGroup::new(second_group_id, 2);
         let second_group_registry = ProposalHandlingGroupRegistry::new(
             &second_group,
             vec![&third_subject, &fourth_subject],
@@ -277,10 +277,10 @@ mod tests {
         let fourth_subject =
             TestSubject::new(fourth_subject_id, vec![second_group_id, first_group_id]);
         // Groups
-        let first_group = TestGroup::new(first_group_id, 3);
+        let first_group = DefaultGroup::new(first_group_id, 3);
         let first_group_registry =
             ProposalHandlingGroupRegistry::new(&first_group, vec![&first_subject, &second_subject]);
-        let second_group = TestGroup::new(second_group_id, 1);
+        let second_group = DefaultGroup::new(second_group_id, 1);
         let second_group_registry = ProposalHandlingGroupRegistry::new(
             &second_group,
             vec![&third_subject, &fourth_subject],
@@ -307,7 +307,7 @@ mod tests {
         let third_subject =
             TestSubject::new(third_subject_id, vec![first_group_id, second_group_id]);
         // Group(s)
-        let first_group = TestGroup::new(first_group_id, 3);
+        let first_group = DefaultGroup::new(first_group_id, 3);
         let first_group_registry =
             ProposalHandlingGroupRegistry::new(&first_group, vec![&first_subject, &second_subject]);
         let actual_offer = first_group_registry
@@ -334,7 +334,7 @@ mod tests {
         let third_subject =
             TestSubject::new(third_subject_id, vec![second_group_id, first_group_id]);
         // Group(s)
-        let first_group = TestGroup::new(first_group_id, 1);
+        let first_group = DefaultGroup::new(first_group_id, 1);
         let first_group_registry =
             ProposalHandlingGroupRegistry::new(&first_group, vec![&first_subject]);
         // The second subject wants to be in the first group more than the first so an offer is given
