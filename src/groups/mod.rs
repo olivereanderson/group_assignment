@@ -11,7 +11,7 @@ pub trait Group {
     /// The groups capacity
     fn capacity(&self) -> i32;
 }
-/// A simple group type. 
+/// A simple group type.
 pub struct DefaultGroup {
     id: u64,
     capacity: i32,

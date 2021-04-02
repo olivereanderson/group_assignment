@@ -177,7 +177,7 @@ impl<'a, S: Subject, G: Group> ProposalHandlingGroupRegistry<'a, S, G> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::groups::DefaultGroup; 
+    use crate::groups::DefaultGroup;
     use crate::subjects::test_utils::TestSubject;
 
     /// Practical method to have when we want to ensure a certain state when testing

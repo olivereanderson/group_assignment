@@ -2,20 +2,17 @@
 //! This module defines defining the subject trait
 
 use std::collections::HashMap;
-pub use subject::Subject;
 
-mod subject {
-    /// The subjects to be placed in groups must implement this trait
-    pub trait Subject {
-        /// A measure for how displeased the subject will be after being assigned to the corresponding group
-        fn dissatisfaction(&self, group_id: &u64) -> i32;
+/// The subjects to be placed in groups must implement this trait
+pub trait Subject {
+    /// A measure for how displeased the subject will be after being assigned to the corresponding group
+    fn dissatisfaction(&self, group_id: &u64) -> i32;
 
-        /// Id used to identify the subject.
-        /// Every binding to a type that implements the subject trait is expected to have a unique id.
-        ///
-        /// We do not require the images of this map and the equally named function in the [group trait](crate::groups::Group) to be disjoint.
-        fn id(&self) -> u64;
-    }
+    /// Id used to identify the subject.
+    /// Every binding to a type that implements the subject trait is expected to have a unique id.
+    ///
+    /// We do not require the images of this map and the equally named function in the [group trait](crate::groups::Group) to be disjoint.
+    fn id(&self) -> u64;
 }
 
 /// A simple subject type.
