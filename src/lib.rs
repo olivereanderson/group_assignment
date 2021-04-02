@@ -65,7 +65,7 @@
 //!    assignment.group_to_subjects_ids(&groups[1]).unwrap().contains(&student_ids[3])
 //!);
 //! ```
-//! # A simple example where we implementing the subject and group traits.  
+//! # A simple example where we implement the subject and group traits.  
 //! ```
 //!use group_assignment::{Subject, Group};
 //!use group_assignment::assigners::{Assigner,FirstComeFirstServed};
