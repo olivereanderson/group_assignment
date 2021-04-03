@@ -23,6 +23,17 @@ impl Assignment {
     }
 }
 
+impl Default for Assignment {
+    fn default() -> Self {
+        let subject_ids_to_group_ids: HashMap<u64, u64> = HashMap::new();
+        let group_ids_to_subjects_ids: HashMap<u64, Vec<u64>> = HashMap::new();
+        Self {
+            subject_ids_to_group_ids,
+            group_ids_to_subjects_ids,
+        }
+    }
+}
+
 impl From<(HashMap<u64, u64>, HashMap<u64, Vec<u64>>)> for Assignment {
     fn from(pair_of_maps: (HashMap<u64, u64>, HashMap<u64, Vec<u64>>)) -> Self {
         Self {
