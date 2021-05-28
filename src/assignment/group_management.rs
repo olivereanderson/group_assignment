@@ -8,10 +8,10 @@ use super::Assignment;
 /// The assigners in this library will typically use types implementing this trait.
 pub(super) trait GroupRegistry: Group {
     /// A many to one mapping from the ids of the group registry's subjects to the group's id
-    fn subjects_ids_to_group_id(&self) -> HashMap<u64, u64>;
+    fn subjects_ids_to_group_id(&self) -> HashMap<u32, u32>;
 
     /// A one to many mapping from the group registry's id to the ids of its subjects
-    fn group_id_to_subject_ids(&self) -> HashMap<u64, Vec<u64>>;
+    fn group_id_to_subject_ids(&self) -> HashMap<u32, Vec<u32>>;
 
     /// Indicates whether the managed group is full
     fn full(&self) -> bool;
@@ -23,15 +23,15 @@ pub(super) trait GroupRegistry: Group {
 pub(super) fn assign_from_group_registries<M: GroupRegistry>(
     mut group_registries: Vec<M>,
 ) -> Assignment {
-    let (init_subjects_mapper, init_groups_mapper): (HashMap<u64, u64>, HashMap<u64, Vec<u64>>) =
+    let (init_subjects_mapper, init_groups_mapper): (HashMap<u32, u32>, HashMap<u32, Vec<u32>>) =
         group_registries
             .pop()
             .map(|x| (x.subjects_ids_to_group_id(), x.group_id_to_subject_ids()))
             .unwrap_or((HashMap::new(), HashMap::new()));
 
     let (subject_identifiers_to_group_identifiers, group_identifiers_to_subject_identifiers): (
-        HashMap<u64, u64>,
-        HashMap<u64, Vec<u64>>,
+        HashMap<u32, u32>,
+        HashMap<u32, Vec<u32>>,
     ) = group_registries
         .iter()
         .map(|x| (x.subjects_ids_to_group_id(), x.group_id_to_subject_ids()))
@@ -84,7 +84,7 @@ where
 }
 
 impl<'a, S: Subject, G: Group> Group for SimpleGroupRegistry<'a, S, G> {
-    fn id(&self) -> u64 {
+    fn id(&self) -> u32 {
         self.group.id()
     }
 
@@ -104,16 +104,16 @@ impl<'a, S: Subject, G: Group> GroupRegistry for SimpleGroupRegistry<'a, S, G> {
         self.subjects.len() as u32 >= self.capacity()
     }
 
-    fn subjects_ids_to_group_id(&self) -> HashMap<u64, u64> {
+    fn subjects_ids_to_group_id(&self) -> HashMap<u32, u32> {
         let id = self.id();
-        let map: HashMap<u64, u64> = self.subjects.iter().map(|x| (x.id(), id)).collect();
+        let map: HashMap<u32, u32> = self.subjects.iter().map(|x| (x.id(), id)).collect();
         map
     }
 
-    fn group_id_to_subject_ids(&self) -> HashMap<u64, Vec<u64>> {
+    fn group_id_to_subject_ids(&self) -> HashMap<u32, Vec<u32>> {
         let id = self.id();
-        let subject_ids: Vec<u64> = self.subjects.iter().map(|x| x.id()).collect();
-        let mut map: HashMap<u64, Vec<u64>> = HashMap::new();
+        let subject_ids: Vec<u32> = self.subjects.iter().map(|x| x.id()).collect();
+        let mut map: HashMap<u32, Vec<u32>> = HashMap::new();
         map.insert(id, subject_ids);
         map
     }

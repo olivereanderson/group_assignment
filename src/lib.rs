@@ -10,26 +10,26 @@
 //!use group_assignment::assigners::{Assigner, FirstComeFirstServed};
 //!use std::collections::HashMap;
 //!struct Student {
-//!    id: u64,
+//!    id: u32,
 //!    name: String,
-//!    preferences: HashMap<u64,u32>,
+//!    preferences: HashMap<u32,u32>,
 //!}
 //!impl Student {
-//!    fn new(id:u64, name:String, preferences: HashMap<u64,u32>) -> Self {
+//!    fn new(id:u32, name:String, preferences: HashMap<u32,u32>) -> Self {
 //!        Self{id, name, preferences}
 //!    }
 //!}
 //!struct GermanClass {
-//!    id: u64,
+//!    id: u32,
 //!    description: String,
 //!    capacity: u32,
 //!}
 //!impl GermanClass {
-//!    fn new(id: u64, description: String, capacity: u32) -> Self {
+//!    fn new(id: u32, description: String, capacity: u32) -> Self {
 //!        Self{id,description,capacity: capacity}
 //!    }
 //!}
-//!let grp_id_by_description: HashMap<String, u64> = [
+//!let grp_id_by_description: HashMap<String, u32> = [
 //!    ("Early class".to_string(),101),
 //!    ("Afternoon class".to_string(), 102)
 //!].iter().cloned().collect();
@@ -38,14 +38,14 @@
 //!    GermanClass::new(grp_id_by_description["Afternoon class"], "Afternoon class".to_string(), 2)
 //!];
 //!let groups: Vec<DefaultGroup> = classes.iter().map(|x| DefaultGroup::new(x.id, x.capacity)).collect();
-//!let prefer_early_class: HashMap<u64,u32> = [
+//!let prefer_early_class: HashMap<u32,u32> = [
 //!    (grp_id_by_description["Early class"],0), (grp_id_by_description["Afternoon class"],1)
 //!].iter().cloned().collect();  
-//!let prefer_late_class: HashMap<u64,u32> = [
+//!let prefer_late_class: HashMap<u32,u32> = [
 //!    (grp_id_by_description["Early class"],1),
 //!    (grp_id_by_description["Afternoon class"],0)
 //!].iter().cloned().collect();
-//!let student_ids = [1_u64,2,3,4];
+//!let student_ids = [1_u32,2,3,4];
 //!let students = [
 //!    Student::new(student_ids[0], "Pansela".to_string(), prefer_early_class.clone()),
 //!    Student::new(student_ids[1], "Kjetil".to_string(), prefer_late_class),
@@ -71,42 +71,42 @@
 //!use group_assignment::assigners::{Assigner,FirstComeFirstServed};
 //!use std::collections::HashMap;
 //!struct Student {
-//!    id: u64,
+//!    id: u32,
 //!    name: String,
-//!    preferences: HashMap<u64,u32>,
+//!    preferences: HashMap<u32,u32>,
 //!}
 //!impl Student {
-//!    fn new(id:u64, name:String, preferences: HashMap<u64,u32>) -> Self {
+//!    fn new(id:u32, name:String, preferences: HashMap<u32,u32>) -> Self {
 //!        Self{id, name, preferences}
 //!    }
 //!}
 //!impl Subject for Student {
-//!    fn id(&self) -> u64 {
+//!    fn id(&self) -> u32 {
 //!        self.id
 //!    }
-//!    fn dissatisfaction(&self, group_id: &u64) -> u32 {
+//!    fn dissatisfaction(&self, group_id: &u32) -> u32 {
 //!        self.preferences[group_id]
 //!    }
 //!}
 //!struct GermanClass {
-//!    id: u64,
+//!    id: u32,
 //!    description: String,
 //!    capacity: u32,
 //!}
 //!impl GermanClass {
-//!    fn new(id: u64, description: String, capacity: u32) -> Self {
+//!    fn new(id: u32, description: String, capacity: u32) -> Self {
 //!        Self{id,description,capacity: capacity}
 //!    }
 //!}
 //!impl Group for GermanClass {
-//!    fn id(&self) -> u64 {
+//!    fn id(&self) -> u32 {
 //!        self.id
 //!    }
 //!    fn capacity(&self) -> u32 {
 //!        self.capacity
 //!    }
 //!}
-//!let grp_id_by_description: HashMap<String, u64> = [
+//!let grp_id_by_description: HashMap<String, u32> = [
 //!    ("Early class".to_string(),101),
 //!    ("Afternoon class".to_string(), 102)
 //!].iter().cloned().collect();
@@ -114,14 +114,14 @@
 //!    GermanClass::new(grp_id_by_description["Early class"], "Early class".to_string(),2),
 //!    GermanClass::new(grp_id_by_description["Afternoon class"], "Afternoon class".to_string(), 2)
 //!];
-//!let prefer_early_class: HashMap<u64,u32> = [
+//!let prefer_early_class: HashMap<u32,u32> = [
 //!    (grp_id_by_description["Early class"],0), (grp_id_by_description["Afternoon class"],1)
 //!].iter().cloned().collect();  
-//!let prefer_late_class: HashMap<u64,u32> = [
+//!let prefer_late_class: HashMap<u32,u32> = [
 //!    (grp_id_by_description["Early class"],1),
 //!    (grp_id_by_description["Afternoon class"],0)
 //!].iter().cloned().collect();
-//!let student_ids = [1_u64,2,3,4];
+//!let student_ids = [1_u32,2,3,4];
 //!let students = [
 //!    Student::new(student_ids[0], "Pansela".to_string(), prefer_early_class.clone()),
 //!    Student::new(student_ids[1], "Kjetil".to_string(), prefer_late_class),

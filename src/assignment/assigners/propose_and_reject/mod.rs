@@ -207,8 +207,8 @@ mod tests {
 
     #[test]
     fn assign() {
-        let subject_ids = [1_u64, 2, 3, 4, 5, 6, 7, 8];
-        let group_ids = [101_u64, 102, 103, 104, 105];
+        let subject_ids = [1_u32, 2, 3, 4, 5, 6, 7, 8];
+        let group_ids = [101_u32, 102, 103, 104, 105];
         let preferences1 = vec![
             group_ids[0],
             group_ids[1],
@@ -240,7 +240,7 @@ mod tests {
             TestSubject::new(subject_ids[6], preferences3.clone()),
             TestSubject::new(subject_ids[7], preferences3.clone()),
         ];
-        let capacities: HashMap<u64, u32> = [
+        let capacities: HashMap<u32, u32> = [
             (group_ids[0], 1),
             (group_ids[1], 1),
             (group_ids[2], 1),
@@ -256,8 +256,8 @@ mod tests {
             .collect();
 
         let (subject_ids_to_group_ids, group_ids_to_subjects_ids): (
-            HashMap<u64, u64>,
-            HashMap<u64, Vec<u64>>,
+            HashMap<u32, u32>,
+            HashMap<u32, Vec<u32>>,
         ) = ProposeAndReject::assign(&subjects, &groups).unwrap().into();
         assert_eq!(group_ids_to_subjects_ids[&group_ids[4]].len(), 2); // Only two subjects should be assigned to the least desired gorup despite its capacity being 3
         let total_dissatisfaction: u32 = subjects
@@ -269,9 +269,9 @@ mod tests {
 
     #[test]
     fn assign_no_necessary_replacements() {
-        let subject_ids = vec![1_u64, 2, 3, 4];
-        let group_ids = vec![101_u64, 102, 103];
-        let mut preferences: HashMap<u64, Vec<u64>> = HashMap::new();
+        let subject_ids = vec![1_u32, 2, 3, 4];
+        let group_ids = vec![101_u32, 102, 103];
+        let mut preferences: HashMap<u32, Vec<u32>> = HashMap::new();
         let preference_by_order = vec![group_ids[0], group_ids[1], group_ids[2]];
         preferences.insert(subject_ids[0], preference_by_order.clone());
         preferences.insert(subject_ids[1], preference_by_order.clone());
@@ -280,7 +280,7 @@ mod tests {
             subject_ids[3],
             vec![group_ids[0], group_ids[2], group_ids[1]],
         );
-        let capacities: HashMap<u64, u32> =
+        let capacities: HashMap<u32, u32> =
             [(group_ids[0], 2), (group_ids[1], 1), (group_ids[2], 1)]
                 .iter()
                 .cloned()
@@ -294,8 +294,8 @@ mod tests {
             .map(|id| DefaultGroup::new(*id, capacities[id]))
             .collect();
         let (subject_ids_to_group_ids, group_ids_to_subjects_ids): (
-            HashMap<u64, u64>,
-            HashMap<u64, Vec<u64>>,
+            HashMap<u32, u32>,
+            HashMap<u32, Vec<u32>>,
         ) = ProposeAndReject::assign(&subjects, &groups).unwrap().into();
 
         let number_of_assigned_subjects: u32 = groups
@@ -313,8 +313,8 @@ mod tests {
 
     #[test]
     fn assign_complete_after_first_step() {
-        let subject_ids = [1_u64, 2, 3];
-        let group_ids = [101_u64, 102];
+        let subject_ids = [1_u32, 2, 3];
+        let group_ids = [101_u32, 102];
         let subjects = [
             TestSubject::new(subject_ids[0], vec![group_ids[1]]),
             TestSubject::new(subject_ids[1], vec![group_ids[0], group_ids[1]]),
@@ -326,8 +326,8 @@ mod tests {
         ];
         // Check that the first subject is assigned to the second group
         let (subject_ids_to_group_ids, group_ids_to_subject_ids): (
-            HashMap<u64, u64>,
-            HashMap<u64, Vec<u64>>,
+            HashMap<u32, u32>,
+            HashMap<u32, Vec<u32>>,
         ) = ProposeAndReject::assign(&subjects, &groups).unwrap().into();
         assert_eq!(group_ids[1], subject_ids_to_group_ids[&subject_ids[0]]);
         assert!(group_ids_to_subject_ids[&group_ids[1]].contains(&subject_ids[0]));
@@ -341,15 +341,15 @@ mod tests {
 
     #[test]
     fn assign_complete_after_first_step_only_full() {
-        let subject_id = 1 as u64;
-        let group_id = 101 as u64;
+        let subject_id = 1 as u32;
+        let group_id = 101 as u32;
         let subject = TestSubject::new(subject_id, vec![group_id]);
         let group = DefaultGroup::new(group_id, 1);
         let subjects = [subject];
         let groups = [group];
         let (subject_ids_to_group_ids, group_ids_to_subject_ids): (
-            HashMap<u64, u64>,
-            HashMap<u64, Vec<u64>>,
+            HashMap<u32, u32>,
+            HashMap<u32, Vec<u32>>,
         ) = ProposeAndReject::assign(&subjects, &groups).unwrap().into();
         assert_eq!(group_id, subject_ids_to_group_ids[&subject_id]);
         assert!(group_ids_to_subject_ids[&group_id].contains(&subject_id));
@@ -358,37 +358,37 @@ mod tests {
     #[test]
     fn assign_no_first_choice() {
         struct TestSubjectWithoutFirstChoice {
-            id: u64,
+            id: u32,
         }
         impl Subject for TestSubjectWithoutFirstChoice {
-            fn id(&self) -> u64 {
+            fn id(&self) -> u32 {
                 self.id
             }
-            fn dissatisfaction(&self, _group_id: &u64) -> u32 {
+            fn dissatisfaction(&self, _group_id: &u32) -> u32 {
                 1
             }
         }
         impl TestSubjectWithoutFirstChoice {
-            fn new(id: u64) -> Self {
+            fn new(id: u32) -> Self {
                 Self { id }
             }
         }
-        let first_subject_id = 1 as u64;
-        let second_subject_id = 2 as u64;
+        let first_subject_id = 1 as u32;
+        let second_subject_id = 2 as u32;
 
         let first_subject = TestSubjectWithoutFirstChoice::new(first_subject_id);
         let second_subject = TestSubjectWithoutFirstChoice::new(second_subject_id);
         let subjects = [first_subject, second_subject];
 
-        let first_group_id = 101 as u64;
-        let second_group_id = 102 as u64;
+        let first_group_id = 101 as u32;
+        let second_group_id = 102 as u32;
 
         let first_group = DefaultGroup::new(first_group_id, 1);
         let second_group = DefaultGroup::new(second_group_id, 1);
         let groups = [first_group, second_group];
         let (_subject_ids_to_group_ids, group_ids_to_subjects_ids): (
-            HashMap<u64, u64>,
-            HashMap<u64, Vec<u64>>,
+            HashMap<u32, u32>,
+            HashMap<u32, Vec<u32>>,
         ) = ProposeAndReject::assign(&subjects, &groups).unwrap().into();
         assert_eq!(1, group_ids_to_subjects_ids[&first_group_id].len() as u32);
         assert_eq!(1, group_ids_to_subjects_ids[&second_group_id].len() as u32);

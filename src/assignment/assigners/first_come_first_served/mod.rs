@@ -53,8 +53,8 @@ mod tests {
     use std::collections::HashMap;
     #[test]
     fn assign() {
-        let subject_ids = [1_u64, 2, 3, 4];
-        let group_ids = [101_u64, 102, 103];
+        let subject_ids = [1_u32, 2, 3, 4];
+        let group_ids = [101_u32, 102, 103];
         let subjects = [
             TestSubject::new(subject_ids[0], vec![group_ids[0], group_ids[2]]),
             TestSubject::new(subject_ids[1], vec![group_ids[0], group_ids[1]]),
@@ -67,7 +67,7 @@ mod tests {
             DefaultGroup::new(group_ids[2], 3),
         ];
 
-        let (subject_identifiers_to_group_identifiers, group_identifiers_to_subjects_identifiers) : (HashMap<u64,u64>, HashMap<u64,Vec<u64>>) =
+        let (subject_identifiers_to_group_identifiers, group_identifiers_to_subjects_identifiers) : (HashMap<u32,u32>, HashMap<u32,Vec<u32>>) =
             FirstComeFirstServed::assign(&subjects, &groups).unwrap().into();
         // assert that the first subject is assigned to the first group
         assert_eq!(

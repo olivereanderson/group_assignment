@@ -60,7 +60,7 @@ impl<'a, S: Subject, G: Group> GrowingGroupRegistry<'a, S>
 }
 
 impl<'a, S: Subject, G: Group> Group for ProposalHandlingGroupRegistry<'a, S, G> {
-    fn id(&self) -> u64 {
+    fn id(&self) -> u32 {
         self.delegate.id()
     }
 
@@ -73,10 +73,10 @@ impl<'a, S: Subject, G: Group> GroupRegistry for ProposalHandlingGroupRegistry<'
     fn full(&self) -> bool {
         self.delegate.full()
     }
-    fn subjects_ids_to_group_id(&self) -> HashMap<u64, u64> {
+    fn subjects_ids_to_group_id(&self) -> HashMap<u32, u32> {
         self.delegate.subjects_ids_to_group_id()
     }
-    fn group_id_to_subject_ids(&self) -> HashMap<u64, Vec<u64>> {
+    fn group_id_to_subject_ids(&self) -> HashMap<u32, Vec<u32>> {
         self.delegate.group_id_to_subject_ids()
     }
 }
@@ -200,12 +200,12 @@ mod tests {
     #[test]
     fn propose_transferral_none() {
         // Subject id's:
-        let first_subject_id = 1 as u64;
-        let second_subject_id = 2 as u64;
-        let third_subject_id = 3 as u64;
+        let first_subject_id = 1 as u32;
+        let second_subject_id = 2 as u32;
+        let third_subject_id = 3 as u32;
         // Group id's
-        let first_group_id = 101 as u64;
-        let second_group_id = 102 as u64;
+        let first_group_id = 101 as u32;
+        let second_group_id = 102 as u32;
         // Subjects
         let first_subject =
             TestSubject::new(first_subject_id, vec![second_group_id, first_group_id]);
@@ -227,13 +227,13 @@ mod tests {
     #[test]
     fn propose_transferral_subject_replacement() {
         // Subject id's:
-        let first_subject_id = 1 as u64;
-        let second_subject_id = 2 as u64;
-        let third_subject_id = 3 as u64;
-        let fourth_subject_id = 4 as u64;
+        let first_subject_id = 1 as u32;
+        let second_subject_id = 2 as u32;
+        let third_subject_id = 3 as u32;
+        let fourth_subject_id = 4 as u32;
         // Group id's
-        let first_group_id = 101 as u64;
-        let second_group_id = 102 as u64;
+        let first_group_id = 101 as u32;
+        let second_group_id = 102 as u32;
         // Subjects
         let first_subject =
             TestSubject::new(first_subject_id, vec![second_group_id, first_group_id]);
@@ -260,13 +260,13 @@ mod tests {
     #[test]
     fn propose_transferral_enough_space() {
         // Subject id's:
-        let first_subject_id = 1 as u64;
-        let second_subject_id = 2 as u64;
-        let third_subject_id = 3 as u64;
-        let fourth_subject_id = 4 as u64;
+        let first_subject_id = 1 as u32;
+        let second_subject_id = 2 as u32;
+        let third_subject_id = 3 as u32;
+        let fourth_subject_id = 4 as u32;
         // Group id's
-        let first_group_id = 101 as u64;
-        let second_group_id = 102 as u64;
+        let first_group_id = 101 as u32;
+        let second_group_id = 102 as u32;
         // Subjects
         let first_subject =
             TestSubject::new(first_subject_id, vec![second_group_id, first_group_id]);
@@ -293,12 +293,12 @@ mod tests {
     #[test]
     fn handle_membership_proposal_group_not_full() {
         // Subject id's:
-        let first_subject_id = 1 as u64;
-        let second_subject_id = 2 as u64;
-        let third_subject_id = 3 as u64;
+        let first_subject_id = 1 as u32;
+        let second_subject_id = 2 as u32;
+        let third_subject_id = 3 as u32;
         // Group id's
-        let first_group_id = 101 as u64;
-        let second_group_id = 102 as u64;
+        let first_group_id = 101 as u32;
+        let second_group_id = 102 as u32;
         // Subjects
         let first_subject =
             TestSubject::new(first_subject_id, vec![second_group_id, first_group_id]);
@@ -320,12 +320,12 @@ mod tests {
     #[test]
     fn handle_membership_proposal_group_full() {
         // Subject id's:
-        let first_subject_id = 1 as u64;
-        let second_subject_id = 2 as u64;
-        let third_subject_id = 3 as u64;
+        let first_subject_id = 1 as u32;
+        let second_subject_id = 2 as u32;
+        let third_subject_id = 3 as u32;
         // Group id's
-        let first_group_id = 101 as u64;
-        let second_group_id = 102 as u64;
+        let first_group_id = 101 as u32;
+        let second_group_id = 102 as u32;
         // Subjects
         let first_subject =
             TestSubject::new(first_subject_id, vec![second_group_id, first_group_id]);
