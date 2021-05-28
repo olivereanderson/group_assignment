@@ -88,7 +88,7 @@ impl<'a, S: Subject, G: Group> Group for SimpleGroupRegistry<'a, S, G> {
         self.group.id()
     }
 
-    fn capacity(&self) -> i32 {
+    fn capacity(&self) -> u32 {
         self.group.capacity()
     }
 }
@@ -101,7 +101,7 @@ impl<'a, S: Subject, G: Group> SimpleGroupRegistry<'a, S, G> {
 
 impl<'a, S: Subject, G: Group> GroupRegistry for SimpleGroupRegistry<'a, S, G> {
     fn full(&self) -> bool {
-        self.subjects.len() as i32 >= self.capacity()
+        self.subjects.len() as u32 >= self.capacity()
     }
 
     fn subjects_ids_to_group_id(&self) -> HashMap<u64, u64> {

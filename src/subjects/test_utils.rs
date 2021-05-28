@@ -18,9 +18,9 @@ impl TestSubject {
 }
 
 impl Subject for TestSubject {
-    fn dissatisfaction(&self, group_id: &u64) -> i32 {
+    fn dissatisfaction(&self, group_id: &u64) -> u32 {
         let dissatisfaction = self.preferences.iter().position(|x| x == group_id);
-        dissatisfaction.unwrap_or(self.preferences.len()) as i32
+        dissatisfaction.unwrap_or(self.preferences.len()) as u32
     }
 
     fn id(&self) -> u64 {

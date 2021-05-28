@@ -9,16 +9,16 @@ use std::cmp::PartialOrd;
 pub(in crate::assignment::assigners::propose_and_reject) struct MembershipOffer {
     // How dissatisfied the Subject is with the proposed group. Needs to be recorded
     // in order for membership offers to be compared.
-    dissatisfaction_rating: i32,
+    dissatisfaction_rating: u32,
     //None if no one has to leave the group upon offer acceptance. Otherwise a negative value must be provided
     // corresponding to subject.dissatisfaction() - highest dissatisfaction rating amoung the groups current members
-    dissatisfaction_improvement: Option<i32>,
+    dissatisfaction_improvement: Option<i64>,
 }
 
 impl MembershipOffer {
     pub(in crate::assignment::assigners::propose_and_reject) fn new(
-        dissatisfaction_rating: i32,
-        dissatisfaction_improvement: Option<i32>, // if a value is provided it must be negative
+        dissatisfaction_rating: u32,
+        dissatisfaction_improvement: Option<i64>, // if a value is provided it must be negative
     ) -> MembershipOffer {
         MembershipOffer {
             dissatisfaction_rating,

@@ -32,8 +32,8 @@ pub trait Assigner {
         subjects: &[S],
         groups: &[G],
     ) -> Result<(), TotalCapacityError> {
-        let capacity: i32 = groups.iter().map(|x| x.capacity()).sum();
-        if capacity >= (subjects.len() as i32) {
+        let capacity: u32 = groups.iter().map(|x| x.capacity()).sum();
+        if capacity >= (subjects.len() as u32) {
             Ok(())
         } else {
             Err(TotalCapacityError {})

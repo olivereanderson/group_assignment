@@ -240,7 +240,7 @@ mod tests {
             TestSubject::new(subject_ids[6], preferences3.clone()),
             TestSubject::new(subject_ids[7], preferences3.clone()),
         ];
-        let capacities: HashMap<u64, i32> = [
+        let capacities: HashMap<u64, u32> = [
             (group_ids[0], 1),
             (group_ids[1], 1),
             (group_ids[2], 1),
@@ -260,7 +260,7 @@ mod tests {
             HashMap<u64, Vec<u64>>,
         ) = ProposeAndReject::assign(&subjects, &groups).unwrap().into();
         assert_eq!(group_ids_to_subjects_ids[&group_ids[4]].len(), 2); // Only two subjects should be assigned to the least desired gorup despite its capacity being 3
-        let total_dissatisfaction: i32 = subjects
+        let total_dissatisfaction: u32 = subjects
             .iter()
             .map(|x| x.dissatisfaction(&subject_ids_to_group_ids[&x.id()]))
             .sum();
@@ -280,7 +280,7 @@ mod tests {
             subject_ids[3],
             vec![group_ids[0], group_ids[2], group_ids[1]],
         );
-        let capacities: HashMap<u64, i32> =
+        let capacities: HashMap<u64, u32> =
             [(group_ids[0], 2), (group_ids[1], 1), (group_ids[2], 1)]
                 .iter()
                 .cloned()
@@ -298,13 +298,13 @@ mod tests {
             HashMap<u64, Vec<u64>>,
         ) = ProposeAndReject::assign(&subjects, &groups).unwrap().into();
 
-        let number_of_assigned_subjects: i32 = groups
+        let number_of_assigned_subjects: u32 = groups
             .iter()
-            .map(|x| group_ids_to_subjects_ids[&x.id()].len() as i32)
+            .map(|x| group_ids_to_subjects_ids[&x.id()].len() as u32)
             .sum();
 
-        assert_eq!(number_of_assigned_subjects, subject_ids.len() as i32);
-        let total_dissatisfaction: i32 = subjects
+        assert_eq!(number_of_assigned_subjects, subject_ids.len() as u32);
+        let total_dissatisfaction: u32 = subjects
             .iter()
             .map(|x| x.dissatisfaction(&subject_ids_to_group_ids[&x.id()]))
             .sum();
@@ -364,7 +364,7 @@ mod tests {
             fn id(&self) -> u64 {
                 self.id
             }
-            fn dissatisfaction(&self, _group_id: &u64) -> i32 {
+            fn dissatisfaction(&self, _group_id: &u64) -> u32 {
                 1
             }
         }
@@ -390,7 +390,7 @@ mod tests {
             HashMap<u64, u64>,
             HashMap<u64, Vec<u64>>,
         ) = ProposeAndReject::assign(&subjects, &groups).unwrap().into();
-        assert_eq!(1, group_ids_to_subjects_ids[&first_group_id].len() as i32);
-        assert_eq!(1, group_ids_to_subjects_ids[&second_group_id].len() as i32);
+        assert_eq!(1, group_ids_to_subjects_ids[&first_group_id].len() as u32);
+        assert_eq!(1, group_ids_to_subjects_ids[&second_group_id].len() as u32);
     }
 }

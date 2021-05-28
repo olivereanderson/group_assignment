@@ -20,7 +20,7 @@ where
     G: Group,
 {
     delegate: SimpleGroupRegistry<'a, S, G>,
-    highest_dissatisfaction: i32,
+    highest_dissatisfaction: u32,
 }
 
 impl<'a, S: Subject, G: Group> GrowingGroupRegistry<'a, S>
@@ -64,7 +64,7 @@ impl<'a, S: Subject, G: Group> Group for ProposalHandlingGroupRegistry<'a, S, G>
         self.delegate.id()
     }
 
-    fn capacity(&self) -> i32 {
+    fn capacity(&self) -> u32 {
         self.delegate.capacity()
     }
 }
@@ -86,7 +86,7 @@ impl<'a, S: Subject, G: Group> ProposalHandlingGroupRegistry<'a, S, G> {
         let delegate = SimpleGroupRegistry::new(group, subjects);
         Self {
             delegate,
-            highest_dissatisfaction: 0 as i32,
+            highest_dissatisfaction: 0 as u32,
         }
     }
 
@@ -94,8 +94,8 @@ impl<'a, S: Subject, G: Group> ProposalHandlingGroupRegistry<'a, S, G> {
     /// is more eager to be a member of this group then the currently most dissatisfied member.
     pub(super) fn handle_membership_proposal(&self, subject: &S) -> Option<MembershipOffer> {
         let dissatisfaction_rating = subject.dissatisfaction(&self.delegate.id());
-        if (self.delegate.subjects.len() as i32) >= self.capacity() {
-            let dissatisfaction_improvement = dissatisfaction_rating - self.highest_dissatisfaction;
+        if (self.delegate.subjects.len() as u32) >= self.capacity() {
+            let dissatisfaction_improvement = (dissatisfaction_rating as i64) - (self.highest_dissatisfaction as i64);
             if dissatisfaction_improvement >= 0 {
                 None
             } else {
@@ -110,7 +110,7 @@ impl<'a, S: Subject, G: Group> ProposalHandlingGroupRegistry<'a, S, G> {
     }
 
     pub(super) fn overfull(&self) -> bool {
-        (self.delegate.subjects.len() as i32) > self.capacity()
+        (self.delegate.subjects.len() as u32) > self.capacity()
     }
 
     /// Propose to another group to take a member from the current group.

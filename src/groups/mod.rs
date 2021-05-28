@@ -9,16 +9,16 @@ pub trait Group {
     fn id(&self) -> u64;
 
     /// The groups capacity
-    fn capacity(&self) -> i32;
+    fn capacity(&self) -> u32;
 }
 /// A simple group type.
 pub struct DefaultGroup {
     id: u64,
-    capacity: i32,
+    capacity: u32,
 }
 
 impl DefaultGroup {
-    pub fn new(id: u64, capacity: i32) -> Self {
+    pub fn new(id: u64, capacity: u32) -> Self {
         DefaultGroup { id, capacity }
     }
 }
@@ -28,7 +28,7 @@ impl Group for DefaultGroup {
         self.id
     }
 
-    fn capacity(&self) -> i32 {
+    fn capacity(&self) -> u32 {
         self.capacity
     }
 }
