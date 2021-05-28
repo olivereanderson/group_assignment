@@ -53,7 +53,7 @@ impl Subject for DefaultSubject {
     fn dissatisfaction(&self, group_id: &u32) -> u32 {
         self.preferences
             .get(group_id)
-            .map(|x| *x)
+            .copied()
             .unwrap_or(self.default_dissatisfaction)
     }
 }

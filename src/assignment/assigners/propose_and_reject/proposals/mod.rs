@@ -86,7 +86,7 @@ impl<'a, S: Subject, G: Group> ProposalHandlingGroupRegistry<'a, S, G> {
         let delegate = SimpleGroupRegistry::new(group, subjects);
         Self {
             delegate,
-            highest_dissatisfaction: 0 as u32,
+            highest_dissatisfaction: 0u32,
         }
     }
 
@@ -95,7 +95,8 @@ impl<'a, S: Subject, G: Group> ProposalHandlingGroupRegistry<'a, S, G> {
     pub(super) fn handle_membership_proposal(&self, subject: &S) -> Option<MembershipOffer> {
         let dissatisfaction_rating = subject.dissatisfaction(&self.delegate.id());
         if (self.delegate.subjects.len() as u32) >= self.capacity() {
-            let dissatisfaction_improvement = (dissatisfaction_rating as i64) - (self.highest_dissatisfaction as i64);
+            let dissatisfaction_improvement =
+                (dissatisfaction_rating as i64) - (self.highest_dissatisfaction as i64);
             if dissatisfaction_improvement >= 0 {
                 None
             } else {
@@ -160,7 +161,7 @@ impl<'a, S: Subject, G: Group> ProposalHandlingGroupRegistry<'a, S, G> {
     // Adds a member without taking capacity limitations into consideration
     // This method is typically used to return members to the group of their first choice after being replaced by
     // some other member in their previously assigned group.
-    pub(super) fn force_register_subject(&mut self, subject: &'a S) -> () {
+    pub(super) fn force_register_subject(&mut self, subject: &'a S) {
         let id = self.id();
         if let Some(position) = self
             .delegate

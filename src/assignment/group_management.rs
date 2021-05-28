@@ -60,7 +60,7 @@ pub(super) fn subject_to_best_available_group_registry<
     subject: &'a S,
     mut group_registries: Vec<M>,
 ) -> Vec<M> {
-    group_registries
+    if let Some(x) = group_registries
         .iter_mut()
         .filter(|x| !x.full())
         .min_by(|x, y| {
@@ -68,8 +68,9 @@ pub(super) fn subject_to_best_available_group_registry<
                 .dissatisfaction(&x.id())
                 .cmp(&subject.dissatisfaction(&y.id()))
         })
-        .map(|x| x.register_subject(subject).unwrap());
-
+    {
+        x.register_subject(subject).unwrap();
+    }
     group_registries
 }
 /// The assigners in this library will typically use some decoration of this data structure to provide assignments

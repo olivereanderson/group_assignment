@@ -2,6 +2,9 @@
 //! This module provides an [assigner](crate::assignment::assigners::Assigner) inspired by the Gale-Shapley algorithm (also known as the propose-and-reject algorithm).
 //!
 use std::collections::HashSet;
+use std::iter::FromIterator;
+use std::ops::Deref;
+use std::ops::DerefMut;
 
 use super::Assigner;
 use super::GroupRegistry;
@@ -31,27 +34,112 @@ impl Assigner for ProposeAndReject {
     ) -> Result<Assignment, TotalCapacityError> {
         Self::sufficient_capacity(subjects, groups)?;
         let group_registries = first_step(subjects, groups);
-        // Partition the managers into those whose corresponding groups will be overfull, full, and available respectively
-        let (full, mut available): (
-            Vec<ProposalHandlingGroupRegistry<S, G>>,
-            Vec<ProposalHandlingGroupRegistry<S, G>>,
-        ) = group_registries.into_iter().partition(|x| x.full());
-        let (mut overfull, mut bystanders): (
-            Vec<ProposalHandlingGroupRegistry<S, G>>,
-            Vec<ProposalHandlingGroupRegistry<S, G>>,
-        ) = full.into_iter().partition(|x| x.overfull());
-        while overfull.len() > 0 {
+        // Partition the registries into those whose corresponding groups will be overfull, full, and available respectively
+        let mut registries_partition = RegristriesPartition::from_first_step(group_registries);
+        while registries_partition.overfull.len() > 0 {
             // The following is a workaround until destructuring assignments stabilizes: See https://github.com/rust-lang/rust/issues/71126
-            let (next_overfull, next_bystanders, next_available) =
-                proposal_round(overfull, bystanders, available);
-            overfull = next_overfull;
-            bystanders = next_bystanders;
-            available = next_available;
+            registries_partition = proposal_round(registries_partition);
         }
-        let resolved_registries: Vec<ProposalHandlingGroupRegistry<S, G>> =
-            available.into_iter().chain(bystanders).collect();
+        let (available, bystanders) = (
+            registries_partition.available,
+            registries_partition.bystanders,
+        );
+        let resolved_registries: Vec<ProposalHandlingGroupRegistry<S, G>> = available
+            .into_iter()
+            .chain(bystanders.into_iter())
+            .collect();
 
         Ok(super::assign_from_group_registries(resolved_registries))
+    }
+}
+struct ProposalHandlingGroupRegistries<'a, S: Subject, G: Group> {
+    group_registries: Vec<ProposalHandlingGroupRegistry<'a, S, G>>,
+}
+
+impl<'a, S: Subject, G: Group> From<Vec<ProposalHandlingGroupRegistry<'a, S, G>>>
+    for ProposalHandlingGroupRegistries<'a, S, G>
+{
+    fn from(group_registries: Vec<ProposalHandlingGroupRegistry<'a, S, G>>) -> Self {
+        Self { group_registries }
+    }
+}
+
+impl<'a, S: Subject, G: Group> Deref for ProposalHandlingGroupRegistries<'a, S, G> {
+    type Target = Vec<ProposalHandlingGroupRegistry<'a, S, G>>;
+    fn deref(&self) -> &Self::Target {
+        &self.group_registries
+    }
+}
+
+impl<'a, S: Subject, G: Group> DerefMut for ProposalHandlingGroupRegistries<'a, S, G> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.group_registries
+    }
+}
+
+impl<'a, S: Subject, G: Group> Extend<ProposalHandlingGroupRegistry<'a, S, G>>
+    for ProposalHandlingGroupRegistries<'a, S, G>
+{
+    fn extend<T: IntoIterator<Item = ProposalHandlingGroupRegistry<'a, S, G>>>(&mut self, iter: T) {
+        self.deref_mut().extend(iter);
+    }
+}
+
+impl<'a, S: Subject, G: Group> IntoIterator for ProposalHandlingGroupRegistries<'a, S, G> {
+    type Item = ProposalHandlingGroupRegistry<'a, S, G>;
+    type IntoIter = std::vec::IntoIter<Self::Item>;
+    fn into_iter(self) -> Self::IntoIter {
+        self.group_registries.into_iter()
+    }
+}
+
+impl<'a, S: Subject, G: Group> Default for ProposalHandlingGroupRegistries<'a, S, G> {
+    fn default() -> Self {
+        Self {
+            group_registries: Vec::default(),
+        }
+    }
+}
+
+impl<'a, S: Subject, G: Group> FromIterator<ProposalHandlingGroupRegistry<'a, S, G>>
+    for ProposalHandlingGroupRegistries<'a, S, G>
+{
+    fn from_iter<T: IntoIterator<Item = ProposalHandlingGroupRegistry<'a, S, G>>>(iter: T) -> Self {
+        let group_registries: Vec<ProposalHandlingGroupRegistry<'a, S, G>> =
+            iter.into_iter().collect();
+        Self { group_registries }
+    }
+}
+
+struct RegristriesPartition<'a, S: Subject, G: Group> {
+    overfull: ProposalHandlingGroupRegistries<'a, S, G>,
+    bystanders: ProposalHandlingGroupRegistries<'a, S, G>,
+    available: ProposalHandlingGroupRegistries<'a, S, G>,
+}
+
+impl<'a, S: Subject, G: Group> RegristriesPartition<'a, S, G> {
+    fn new(
+        overfull: ProposalHandlingGroupRegistries<'a, S, G>,
+        bystanders: ProposalHandlingGroupRegistries<'a, S, G>,
+        available: ProposalHandlingGroupRegistries<'a, S, G>,
+    ) -> Self {
+        Self {
+            overfull,
+            bystanders,
+            available,
+        }
+    }
+    fn from_first_step(group_registries: ProposalHandlingGroupRegistries<'a, S, G>) -> Self {
+        let (full, available): (
+            ProposalHandlingGroupRegistries<'a, S, G>,
+            ProposalHandlingGroupRegistries<'a, S, G>,
+        ) = group_registries.into_iter().partition(|x| x.full());
+        let (overfull, bystanders) = full.into_iter().partition(|x| x.overfull());
+        Self {
+            overfull,
+            bystanders,
+            available,
+        }
     }
 }
 
@@ -61,7 +149,7 @@ impl Assigner for ProposeAndReject {
 fn first_step<'a, S: Subject, G: Group>(
     subjects: &'a [S],
     groups: &'a [G],
-) -> Vec<ProposalHandlingGroupRegistry<'a, S, G>> {
+) -> ProposalHandlingGroupRegistries<'a, S, G> {
     let mut group_registries: Vec<_> = Vec::new();
     let mut unprocessed_subjects_indices: HashSet<usize> =
         (0..subjects.len()).into_iter().collect();
@@ -91,10 +179,10 @@ fn first_step<'a, S: Subject, G: Group>(
         ));
         unprocessed_subjects_indices = unprocessed_subjects_indices
             .difference(&indices_processed_this_iteration)
-            .map(|i| *i)
+            .copied()
             .collect();
     }
-    if unprocessed_subjects_indices.len() > 0 {
+    if !unprocessed_subjects_indices.is_empty() {
         // This means that there were subjects that gave every group a dissatisfaction rating more than 0
         // We pass these to a group manager by the first come first served principle
         group_registries = handle_subjects_without_first_choice_first_step(
@@ -103,7 +191,7 @@ fn first_step<'a, S: Subject, G: Group>(
             group_registries,
         );
     }
-    group_registries
+    ProposalHandlingGroupRegistries { group_registries }
 }
 
 fn handle_subjects_without_first_choice_first_step<'a, S: Subject, G: Group>(
@@ -122,16 +210,15 @@ fn handle_subjects_without_first_choice_first_step<'a, S: Subject, G: Group>(
     group_registries
 }
 
-fn proposal_round<'a, S: Subject, G: Group>(
-    mut overfull: Vec<ProposalHandlingGroupRegistry<'a, S, G>>,
-    bystanders: Vec<ProposalHandlingGroupRegistry<'a, S, G>>,
-    mut available: Vec<ProposalHandlingGroupRegistry<'a, S, G>>,
-) -> (
-    Vec<ProposalHandlingGroupRegistry<'a, S, G>>,
-    Vec<ProposalHandlingGroupRegistry<'a, S, G>>,
-    Vec<ProposalHandlingGroupRegistry<'a, S, G>>,
-) {
+fn proposal_round<S: Subject, G: Group>(
+    registries_partition: RegristriesPartition<S, G>,
+) -> RegristriesPartition<S, G> {
     let mut subjects_for_reprocessing: Vec<&S> = Vec::new();
+    let (mut overfull, bystanders, mut available) = (
+        registries_partition.overfull,
+        registries_partition.bystanders,
+        registries_partition.available,
+    );
     for overfull_group in overfull.iter_mut() {
         let (transfer_destination_key, offer) = available
             .iter()
@@ -149,9 +236,7 @@ fn proposal_round<'a, S: Subject, G: Group>(
         }
     }
     group_registries_for_next_proposal_round(
-        overfull,
-        bystanders,
-        available,
+        RegristriesPartition::new(overfull, bystanders, available),
         subjects_for_reprocessing,
     )
 }
@@ -159,42 +244,40 @@ fn proposal_round<'a, S: Subject, G: Group>(
 // Adds the subjects for reprocessing to the group manager of their first choice
 // returns a triple consisting of the overful managers, the bystanders and the available managers repsectively
 fn group_registries_for_next_proposal_round<'a, S: Subject, G: Group>(
-    overfull: Vec<ProposalHandlingGroupRegistry<'a, S, G>>,
-    bystanders: Vec<ProposalHandlingGroupRegistry<'a, S, G>>,
-    available: Vec<ProposalHandlingGroupRegistry<'a, S, G>>,
+    registries_partition: RegristriesPartition<'a, S, G>,
     subjects_for_reprocessing: Vec<&'a S>,
-) -> (
-    Vec<ProposalHandlingGroupRegistry<'a, S, G>>,
-    Vec<ProposalHandlingGroupRegistry<'a, S, G>>,
-    Vec<ProposalHandlingGroupRegistry<'a, S, G>>,
-) {
-    let mut registries_for_update: Vec<ProposalHandlingGroupRegistry<'a, S, G>> =
+) -> RegristriesPartition<'a, S, G> {
+    let (overfull, bystanders, available) = (
+        registries_partition.overfull,
+        registries_partition.bystanders,
+        registries_partition.available,
+    );
+    let mut registries_for_update: ProposalHandlingGroupRegistries<'a, S, G> =
         overfull.into_iter().chain(bystanders.into_iter()).collect();
     for subject in subjects_for_reprocessing {
         registries_for_update =
             subject_to_most_desired_group_registry(registries_for_update, subject);
     }
     let (overfull, bystanders): (
-        Vec<ProposalHandlingGroupRegistry<'a, S, G>>,
-        Vec<ProposalHandlingGroupRegistry<'a, S, G>>,
+        ProposalHandlingGroupRegistries<'a, S, G>,
+        ProposalHandlingGroupRegistries<'a, S, G>,
     ) = registries_for_update
         .into_iter()
         .partition(|x| x.overfull());
-    (overfull, bystanders, available)
+    RegristriesPartition::new(overfull, bystanders, available)
 }
 
 fn subject_to_most_desired_group_registry<'a, S: Subject, G: Group>(
-    mut proposal_registries: Vec<ProposalHandlingGroupRegistry<'a, S, G>>,
+    mut proposal_registries: ProposalHandlingGroupRegistries<'a, S, G>,
     subject: &'a S,
-) -> Vec<ProposalHandlingGroupRegistry<'a, S, G>> {
-    proposal_registries
-        .iter_mut()
-        .min_by(|x, y| {
-            subject
-                .dissatisfaction(&x.id())
-                .cmp(&subject.dissatisfaction(&y.id()))
-        })
-        .map(|x| x.force_register_subject(subject));
+) -> ProposalHandlingGroupRegistries<'a, S, G> {
+    if let Some(x) = proposal_registries.iter_mut().min_by(|x, y| {
+        subject
+            .dissatisfaction(&x.id())
+            .cmp(&subject.dissatisfaction(&y.id()))
+    }) {
+        x.force_register_subject(subject)
+    }
     proposal_registries
 }
 
